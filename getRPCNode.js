@@ -1,12 +1,12 @@
-const RavencoinRPC = require("@ravenrebels/ravencoin-rpc");
+const NeuraiRPC = require("@neuraiproject/neurai-rpc");
 
 const getConfig = require("./getConfig");
 const config = getConfig();
 const allNodes = [];
 
-//At startup initialize all RPCs, you can have one or multiple Ravencoin nodes
+//At startup initialize all RPCs, you can have one or multiple Neurai nodes
 for (const node of config.nodes) {
-  const rpc = RavencoinRPC.getRPC(node.username, node.password, node.raven_url);
+  const rpc = NeuraiRPC.getRPC(node.username, node.password, node.neurai_url);
   allNodes.push({ name: node.name, rpc });
 }
 

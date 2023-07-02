@@ -1,10 +1,10 @@
 {
-  "name": "ravencoin-rpc-proxy",
+  "name": "neurai-rpc-proxy",
   "version": "1.0.0",
-  "description": "Ravencoin Web API via safe proxy",
+  "description": "Neurai Web API via safe proxy",
   "main": "index.js",
   "dependencies": {
-    "@ravenrebels/ravencoin-rpc": "^0.2.7",
+    "@neuraiproject/neurai-rpc": "^0.2.7",
     "cors": "2.8.5",
     "express": "4.18.2",
     "p-queue": "6.6.2"
@@ -15,17 +15,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ravenrebels/ravencoin-rpc-proxy.git"
+    "url": "git+https://github.com/neuraiproject/neurai-rpc-proxy.git"
   },
   "keywords": [
-    "Ravencoin"
+    "Neurai"
   ],
-  "author": "Raven Rebels (dicklarsson@gmail.com)",
+  "author": "Neurai Rebels (dicklarsson@gmail.com)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ravenrebels/ravencoin-rpc-proxy/issues"
+    "url": "https://github.com/neuraiproject/neurai-rpc-proxy/issues"
   },
-  "homepage": "https://github.com/ravenrebels/ravencoin-rpc-proxy#readme",
+  "homepage": "https://github.com/neuraiproject/neurai-rpc-proxy#readme",
   "devDependencies": {
     "jest": "29.3.1"
   }
