@@ -9,21 +9,21 @@ function getConfig() {
     const template = `
     {
         "concurrency": 4,
-        "endpoint": "https://rpc.ting.finance/rpc",
-        "environment": "Neurai Testnet",
-        "local_port": 9999,
+        "endpoint": "https://rpc.neurai.org/rpc",
+        "environment": "Neurai",
+        "local_port": 19999,
         "nodes": [
           {
-            "name": "Node number 1",
+            "name": "Node 1",
             "username": "dauser",
             "password": "dapassword",
-            "neurai_url": "http://localhost:8888"
+            "neurai_url": "http://localhost:20001"
           },
           {
-            "name": "Node number 2", 
-            "neurai_url": "http://127.0.0.1:8766",
+            "name": "Node 2", 
             "password": "secret",
-            "username": "secret"
+            "username": "secret",
+            "neurai_url": "http://localhost:19001"
           }
         ]
       }

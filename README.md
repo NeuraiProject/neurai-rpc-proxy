@@ -4,7 +4,7 @@
 
 **Purpose**: make Neurai blockchain available via HTTP/WEB by exposing the RPC-API via a Proxy that only allows safe procedures.
 
-Check out this software live at https://rpc.ting.finance/
+Check out this software live at https://rpc.neurai.org/
 ![image](https://user-images.githubusercontent.com/9694984/226344965-7f01cee1-99ef-4a7f-b9db-8cfce4ccb5e8.png)
 
 
@@ -46,7 +46,7 @@ rpc("getaddressbalance", [{ "addresses": ["RXissueSubAssetXXXXXXXXXXXXXWcwhwL"] 
 
 async function rpc(method, params) {
     const data = { method, params };
-    const URL = 'https://xna-rpc-mainnet.ting.finance/rpc'; //replace with your endpoint
+    const URL = 'https://xna-rpc-mainnet.neurai.org/rpc'; //replace with your endpoint
     const response = await fetch(URL, {
         method: 'POST',
         headers: {
@@ -79,26 +79,26 @@ npm install
 ### Sir, how do I configure this software?
 Configure your setup in ./config.json
 ```
-{
-  "concurrency": 4,
-  "endpoint": "https://rpc.ting.finance/rpc",
-  "environment": "Neurai Testnet",
-  "local_port": 9999,
-  "nodes": [
     {
-      "name": "Node number 1",
-      "username": "dauser",
-      "password": "dapassword",
-      "neurai_url": "http://localhost:8888"
-    },
-    {
-      "name": "Nody two tower", 
-      "neurai_url": "http://127.0.0.1:8766",
-      "password": "supermega2354ergsecret",
-      "username": "supermegas3435ecwertwertret"
-    }
-  ]
-}
+        "concurrency": 4,
+        "endpoint": "https://rpc.neurai.org/rpc",
+        "environment": "Neurai",
+        "local_port": 19999,
+        "nodes": [
+          {
+            "name": "Node 1",
+            "username": "dauser",
+            "password": "dapassword",
+            "neurai_url": "http://localhost:20001"
+          },
+          {
+            "name": "Node 2", 
+            "password": "secret",
+            "username": "secret",
+            "neurai_url": "http://localhost:19001"
+          }
+        ]
+      }
 
   ```
 
@@ -140,7 +140,7 @@ npm start
 ```
 
 ## Help with Neurai RPC calls, arguments and stuff
-Go to https://xna-rpc-mainnet.ting.finance/ for in depth description of each RPC call
+Go to https://xna-rpc-mainnet.neurai.org/ for in depth description of each RPC call
 ![image](https://user-images.githubusercontent.com/9694984/212323158-6ed00511-cfcc-4338-990c-ebb57f590cf0.png)
 
 

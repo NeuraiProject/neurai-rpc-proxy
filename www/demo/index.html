@@ -12,7 +12,7 @@
     </main>
     <script type="module">
         import axios from 'https://cdn.skypack.dev/axios';
-        const URL = "https://xna-rpc-mainnet.ting.finance/rpc"
+        const URL = "https://xna-rpc-mainnet.neurai.org/rpc"
         const { data } = await axios.post(URL,
             { method: "getblockcount", params: [] });
         document.title = data.result.toLocaleString();
