@@ -4,7 +4,7 @@
   "description": "Neurai Web API via safe proxy",
   "main": "index.js",
   "dependencies": {
-    "@neuraiproject/neurai-rpc": "^0.2.7",
+    "@ravenrebels/ravencoin-rpc": "^0.3.3",
     "cors": "2.8.5",
     "express": "4.18.2",
     "p-queue": "6.6.2"
@@ -15,12 +15,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neuraiproject/neurai-rpc-proxy.git"
+    "url": "git+https://github.com/ravenrebels/ravencoin-rpc-proxy.git"
   },
   "keywords": [
     "Neurai"
   ],
-  "author": "Neurai Rebels (dicklarsson@gmail.com)",
+  "author": "Raven Rebels (dicklarsson@gmail.com)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/neuraiproject/neurai-rpc-proxy/issues"

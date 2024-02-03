@@ -1,4 +1,4 @@
-const { methods } = require("@neuraiproject/neurai-rpc");
+const { methods } = require("@ravenrebels/ravencoin-rpc");
 const { getRPCNode, getNodes } = require("./getRPCNode");
 const { default: PQueue } = require("p-queue"); //NOTE version 6 with support for CommonJS
 const process = require("process"); //to get memory used
@@ -12,7 +12,7 @@ let numberOfRequests = 0;
 
 /* 
 
-1) All requests to Neurai core node is queued using "p-queue" and run concurrently, you set concurrency in config.json
+1) All requests to Raven core node is queued using "p-queue" and run concurrently, you set concurrency in config.json
 2) Most requests are cached for the lifespan of the CURRENT BLOCK
 
 */
@@ -46,7 +46,7 @@ const app = express();
 app.use(cors());
 
 //Default size limit for request are too small, increase it
-app.use(express.json({limit: '2mb'}));
+app.use(express.json({ limit: "2mb" }));
 
 const config = getConfig();
 
@@ -92,6 +92,12 @@ app.get("/settings", (req, res) => {
   res.send(obj);
 });
 
+app.get("/rpc", (req, res) => {
+  res.send({
+    description:
+      "Please use the HTTP POST method to proceed. For more details, refer to our documentation.",
+  });
+});
 async function addToQueue(request, response) {
   async function work() {
     /*
@@ -140,7 +146,7 @@ async function addToQueue(request, response) {
           });
           cacheService.put(method, params, promise);
         }
-      } 
+      }
       //Should NOT cache
       else {
         const node = getRPCNode();
@@ -168,7 +174,8 @@ app.post("/rpc", async (req, res) => {
   try {
     //check whitelist
     const method = req.body.method;
-    const inc = isWhitelisted(method);
+    const params = req.body.params;
+    const inc = isWhitelisted(method, params);
 
     //Reset counter if too large
     if (numberOfRequests > Number.MAX_SAFE_INTEGER - 1000) {
@@ -177,12 +184,26 @@ app.post("/rpc", async (req, res) => {
     numberOfRequests++;
 
     if (inc === false) {
-      res.status(404).send({
+      console.log("Not whitelisted", method);
+      return res.status(404).send({
         error: "Not in whitelist",
         description: "Method " + method + " is not supported",
       });
-      console.log("Not whitelisted", method);
-      return;
+    }
+    //Special case for listaddressesforassets
+    //Seems to be a bug with listaddressesforassets with second param totalCount set to true
+    if (method === "listaddressesbyasset" && params && params.length >= 2) {
+      if (params[1] === true) {
+        return res.status(404).send({
+          error: "Not in whitelist",
+          description:
+            "Method " +
+            method +
+            " with totalCount set to true is not whitelisted. Please use " +
+            method +
+            " without totalCount = true",
+        });
+      }
     }
 
     let p = bestBlockHashPromise; //need a reference if bestBlockHashPromise is set to null by interval
@@ -215,5 +236,7 @@ app.post("/rpc", async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`RPC Proxy listening on port ${port}, call me later`);
+  console.log(
+    `RPC Proxy listening on path /rpc on port port ${port}, call me later`
+  );
 });

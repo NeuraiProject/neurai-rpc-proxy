@@ -1,4 +1,4 @@
-const NeuraiRPC = require("@neuraiproject/neurai-rpc");
+const NeuraiRPC = require("@ravenrebels/ravencoin-rpc");
 
 const getConfig = require("./getConfig");
 const config = getConfig();

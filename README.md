@@ -4,7 +4,7 @@
 
 **Purpose**: make Neurai blockchain available via HTTP/WEB by exposing the RPC-API via a Proxy that only allows safe procedures.
 
-Check out this software live at https://rpc.neurai.org/
+Check out this software live at https://xna-rpc-mainnet.neurai.org/
 ![image](https://user-images.githubusercontent.com/9694984/226344965-7f01cee1-99ef-4a7f-b9db-8cfce4ccb5e8.png)
 
 
@@ -17,8 +17,8 @@ The body of the request should contain string **method** and array **params**
 
 ### Live examples on Code Pen
 Feel free to fork it and play around
-- Get block count https://codepen.io/NeuraiRebels/full/jOpmErK
-- Address balances https://codepen.io/NeuraiRebels/pen/RwBVEbW
+- Get block count https://codepen.io/RavenRebels/full/jOpmErK
+- Address balances https://codepen.io/RavenRebels/pen/RwBVEbW
 
 ### Example for web browser and Node.js 18+
 ```
@@ -71,7 +71,7 @@ According to JSON-RPC 2.0 a request object could contain four attributes, jsonrp
 
 ## How to install
 ```
-git clone https://github.com/neuraiproject/neurai-rpc-proxy.git
+git clone https://github.com/NeuraiProject/neurai-rpc-proxy.git
 cd neurai-rpc-proxy
 npm install 
 ```
@@ -81,7 +81,7 @@ Configure your setup in ./config.json
 ```
     {
         "concurrency": 4,
-        "endpoint": "https://rpc.neurai.org/rpc",
+        "endpoint": "https://xna-rpc-mainnet.neurai.org/rpc",
         "environment": "Neurai",
         "local_port": 19999,
         "nodes": [
@@ -93,9 +93,10 @@ Configure your setup in ./config.json
           },
           {
             "name": "Node 2", 
-            "password": "secret",
-            "username": "secret",
+            "password": "supermega2354ergsecret",
+            "username": "supermegas3435ecwertwertret",
             "neurai_url": "http://localhost:19001"
+
           }
         ]
       }
@@ -303,7 +304,7 @@ abortrescan
 addmultisigaddress nrequired ["key",...] ( "account" )
 addwitnessaddress "address"
 backupwallet "destination"
-bumpfee has been deprecated on the XNA Wallet.
+bumpfee has been deprecated on the RVN Wallet.
 dumpprivkey "address"
 dumpwallet "filename"
 encryptwallet "passphrase"
