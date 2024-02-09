@@ -50,7 +50,7 @@ rpc("getaddressbalance", [{ "addresses": ["RXissueSubAssetXXXXXXXXXXXXXWcwhwL"] 
 
 async function rpc(method, params) {
     const data = { method, params };
-    const URL = 'https://xna-rpc-mainnet.neurai.org/rpc'; //replace with your endpoint
+    const URL = 'https://rpc-main.neurai.org/rpc'; //replace with your endpoint
     const response = await fetch(URL, {
         method: 'POST',
         headers: {
@@ -85,7 +85,7 @@ Configure your setup in ./config.json
 ```
     {
         "concurrency": 4,
-        "endpoint": "https://xna-rpc-mainnet.neurai.org/rpc",
+        "endpoint": "https://rpc-main.neurai.org/rpc",
         "environment": "Neurai",
         "local_port": 19999,
         "nodes": [
