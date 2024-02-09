@@ -4,7 +4,11 @@
 
 **Purpose**: make Neurai blockchain available via HTTP/WEB by exposing the RPC-API via a Proxy that only allows safe procedures.
 
-Check out this software live at https://xna-rpc-mainnet.neurai.org/
+Check out this software live at 
+
+- Maintnet: https://rpc-main.neurai.org
+- Testnet: https://rpc-testnet.neurai.org
+
 ![image](https://user-images.githubusercontent.com/9694984/226344965-7f01cee1-99ef-4a7f-b9db-8cfce4ccb5e8.png)
 
 
