@@ -1,4 +1,4 @@
-const { methods } = require("@ravenrebels/ravencoin-rpc");
+const { methods } = require("@neuraiproject/neurai-rpc");
 const { getRPCNode, getNodes } = require("./getRPCNode");
 const { default: PQueue } = require("p-queue"); //NOTE version 6 with support for CommonJS
 const process = require("process"); //to get memory used
@@ -93,10 +93,11 @@ app.get("/settings", (req, res) => {
 });
 
 app.get("/rpc", (req, res) => {
-  res.send({
-    description:
-      "Please use the HTTP POST method to proceed. For more details, refer to our documentation.",
-  });
+    res.status(405).set("Allow", "POST")
+        .send({
+            description:
+            "Please use the HTTP POST method to proceed. For more details, refer to our documentation.",
+        });
 });
 async function addToQueue(request, response) {
   async function work() {

@@ -9,21 +9,21 @@ function getConfig() {
     const template = `
     {
         "concurrency": 4,
-        "endpoint": "https://xna-rpc-mainnet.neurai.org/rpc",
+        "endpoint": "https://rpc-main.neurai.org/rpc",
         "environment": "Neurai",
         "local_port": 19999,
         "nodes": [
           {
-            "name": "Node 1",
+            "name": "Node number 1",
             "username": "dauser",
             "password": "dapassword",
-            "neurai_url": "http://localhost:8888"
+            "raven_url": "http://localhost:19101"
           },
           {
-            "name": "Node 2", 
+            "name": "Node number 2", 
+            "raven_url": "http://localhost:19111",
             "password": "secret",
-            "username": "secret",
-            "neurai_url": "http://127.0.0.1:8766"
+            "username": "secret"
           }
         ]
       }
