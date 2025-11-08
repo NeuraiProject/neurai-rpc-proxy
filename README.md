@@ -82,11 +82,11 @@ Configure your setup in ./config.json
             "name": "Node number 1",
             "username": "dauser",
             "password": "dapassword",
-            "raven_url": "http://localhost:19101"
+            "neurai_url": "http://localhost:19101"
           },
           {
             "name": "Node number 2", 
-            "raven_url": "http://localhost:19111",
+            "neurai_url": "http://localhost:19111",
             "password": "secret",
             "username": "secret"
           }
@@ -95,7 +95,7 @@ Configure your setup in ./config.json
 
   ```
 
-### How should my Raven core node be configured?
+### How should my Neurai node be configured?
 Here is a recommendation
 ```
 server=1 

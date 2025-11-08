@@ -12,7 +12,7 @@ let numberOfRequests = 0;
 
 /* 
 
-1) All requests to Raven core node is queued using "p-queue" and run concurrently, you set concurrency in config.json
+1) All requests to Neurai node is queued using "p-queue" and run concurrently, you set concurrency in config.json
 2) Most requests are cached for the lifespan of the CURRENT BLOCK
 
 */

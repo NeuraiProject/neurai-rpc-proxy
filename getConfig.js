@@ -17,11 +17,11 @@ function getConfig() {
             "name": "Node number 1",
             "username": "dauser",
             "password": "dapassword",
-            "raven_url": "http://localhost:19101"
+            "neurai_url": "http://localhost:19101"
           },
           {
             "name": "Node number 2", 
-            "raven_url": "http://localhost:19111",
+            "neurai_url": "http://localhost:19111",
             "password": "secret",
             "username": "secret"
           }
