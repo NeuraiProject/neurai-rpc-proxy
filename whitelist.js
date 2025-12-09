@@ -152,6 +152,23 @@ const whitelist = [
   "validateaddress",
   "verifymessage",
 
+  //== Depin asset ==
+  "checkdepinvalidity",
+  //"freezedepin",
+  "listdepinholders",
+  //"selfrevokedepin",
+  //"unfreezedepin",
+
+  //== Depin messaging ==
+  "depinclearmsg",
+  "depingetmsg",
+  "depingetmsginfo",
+  "depingetpoolcontent",
+  "depinmcpstatus",
+  "depinpoolstats",
+  "depinsendmsg",
+  "depinsubmitmsg",
+
   //== Wallet ==
   /*
     "abandontransaction",
