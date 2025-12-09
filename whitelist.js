@@ -153,6 +153,7 @@ const whitelist = [
   "verifymessage",
 
   //== Depin asset ==
+  "getpubkey",
   "checkdepinvalidity",
   //"freezedepin",
   "listdepinholders",
