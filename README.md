@@ -13,6 +13,35 @@ Check out this software live at:
 
 ![image](https://user-images.githubusercontent.com/9694984/226344965-7f01cee1-99ef-4a7f-b9db-8cfce4ccb5e8.png)
 
+## Features
+
+- **Standard RPC Proxy** (`/rpc`) - Expose standard Neurai RPC calls with caching and rate limiting
+- **DePIN Messaging Proxy** (`/depin`) - Proxy for DePIN (Decentralized Physical Infrastructure Network) messaging with automatic challenge-response authentication
+- **Smart Caching** - Cache responses based on block height to reduce node load
+- **Queue Management** - Control concurrent requests to your Neurai node
+- **Whitelist Protection** - Only allow safe, read-only operations
+- **Multi-Node Support** - Automatic failover between multiple Neurai nodes
+
+## DePIN Support
+
+This proxy now supports DePIN messaging through the `/depin` endpoint. DePIN uses cryptographic signature authentication instead of username/password.
+
+For complete DePIN documentation, see [DEPIN_PROXY.md](./DEPIN_PROXY.md).
+
+Quick example:
+```javascript
+const response = await fetch('http://localhost:19999/depin', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    address: 'NYourNeuraiAddress',
+    signature: 'base64_signature',
+    method: 'depingetmsg',
+    params: ['RECEIVE', 10]
+  })
+});
+```
+
 
 ## How do I use this software?
 
@@ -77,47 +106,103 @@ npm install
 
 ### How do I configure this software?
 Configure your setup in ./config.json
-```
-    {
-        "concurrency": 4,
-        "endpoint": "https://rpc-main.neurai.org/rpc",
-        "environment": "Neurai",
-        "local_port": 19999,
-        "nodes": [
-          {
-            "name": "Node number 1",
-            "username": "dauser",
-            "password": "dapassword",
-            "neurai_url": "http://localhost:19101"
-          },
-          {
-            "name": "Node number 2", 
-            "neurai_url": "http://localhost:19111",
-            "password": "secret",
-            "username": "secret"
-          }
-        ]
-      }
 
-  ```
+**Standard configuration:**
+```json
+{
+    "concurrency": 4,
+    "endpoint": "https://rpc-main.neurai.org/rpc",
+    "environment": "Neurai",
+    "local_port": 19999,
+    "nodes": [
+      {
+        "name": "Node number 1",
+        "username": "dauser",
+        "password": "dapassword",
+        "neurai_url": "http://localhost:19001"
+      }
+    ]
+}
+```
+
+**Configuration with DePIN support:**
+```json
+{
+    "concurrency": 4,
+    "endpoint": "https://rpc-main.neurai.org/rpc",
+    "environment": "Neurai",
+    "local_port": 19999,
+    "nodes": [
+      {
+        "name": "Local Node with DePIN",
+        "username": "dauser",
+        "password": "dapassword",
+        "neurai_url": "http://localhost:19001",
+        "depin_enabled": true,
+        "depin_url": "http://localhost:19002"
+      },
+      {
+        "name": "Remote Node without DePIN",
+        "username": "user2",
+        "password": "pass2",
+        "neurai_url": "http://remote.com:19001",
+        "depin_enabled": false
+      },
+      {
+        "name": "Node with auto DePIN port",
+        "username": "user3",
+        "password": "pass3",
+        "neurai_url": "http://localhost:19001",
+        "depin_enabled": true
+      }
+    ]
+}
+```
+
+**DePIN Configuration per Node:**
+- `depin_enabled` (boolean) - Set to `true` to enable DePIN for this node
+- `depin_url` (optional string) - Explicit DePIN URL. If omitted, auto-converts port (19001→19002, 19101→19102)
+
+**Configuration Options:**
+- `concurrency` - Number of concurrent requests to handle
+- `endpoint` - Public endpoint URL (displayed in UI)
+- `environment` - Environment name (displayed in UI)
+- `local_port` - Port for the proxy server
+- `nodes` - Array of Neurai nodes for failover
 
 ### How should my Neurai node be configured?
-Here is a recommendation
+
+**For standard RPC:**
 ```
 server=1 
 listen=1
 
-#Maintains the full transaction index on your node. Needed if you call getrawtransaction. Default is 0.
+# Full transaction index
 txindex=1
 
-#Maintains the full Address index on your node. Needed if you call getaddress* calls. Default is 0.
+# Address index (needed for getaddress* calls)
 addressindex=1
 
-#Maintains the full Asset index on your node. Needed if you call getassetdata. Default is 0.
+# Asset index (needed for getassetdata)
 assetindex=1
 
-#Maintains the full Timestamp index on your node. Default is 0.
+# Timestamp index
 timestampindex=1
+```
+
+**For DePIN messaging (add to above):**
+```
+# Enable DePIN messaging server
+depin=1
+
+# DePIN server port (default: 19002 for mainnet, 19102 for testnet)
+depinport=19002
+
+# Optional: Enable MCP integration for AI responses
+depinmcp=1
+depinmcpurl=http://localhost:1234/v1/chat/completions
+depinmcptimeout=600
+```
 
 #Maintains the full Spent index on your node. Default is 0.
 spentindex=1

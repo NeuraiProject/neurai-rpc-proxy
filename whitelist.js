@@ -72,6 +72,16 @@ const whitelist = [
   //"viewallmessagechannels",
   //"viewallmessages",
 
+  //== DePIN ==
+  "depingetmsginfo",
+  "depinsendmsg",
+  "depinsubmitmsg",
+  "depingetmsg",
+  "depinclearmsg",
+  "depingetpoolcontent",
+  "depinpoolstats",
+  "depinmcpstatus",
+
   //== Mining ==
   // "getblocktemplate",
   //"getkawpowhash",

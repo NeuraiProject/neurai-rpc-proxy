@@ -1,5 +1,6 @@
 /config.json
 # Logs
+docker
 logs
 *.log
 npm-debug.log*

@@ -1,8 +1,9 @@
 const { methods } = require("@neuraiproject/neurai-rpc");
-const { getRPCNode, getNodes } = require("./getRPCNode");
+const { getRPCNode, getNodes, getDePinNode, getDePinNodes } = require("./getRPCNode");
 const { default: PQueue } = require("p-queue"); //NOTE version 6 with support for CommonJS
 const process = require("process"); //to get memory used
 const cacheService = require("./cacheService");
+const depinService = require("./depinService");
 const cors = require("cors");
 const express = require("express");
 const getConfig = require("./getConfig");
@@ -77,9 +78,12 @@ app.get("/getCache", (_, res) => {
   obj.queueSize = queue.size;
   obj.numberOfRequests = numberOfRequests.toLocaleString();
   obj.methods = cacheService.getMethods();
+  obj.depinChallenges = depinService.getCacheStats();
   const nodes = getNodes();
+  const depinNodes = getDePinNodes();
 
   obj.nodes = nodes;
+  obj.depinNodes = depinNodes;
   return res.send(obj);
 });
 app.get("/settings", (req, res) => {
@@ -232,6 +236,80 @@ app.post("/rpc", async (req, res) => {
     console.dir(e);
     res.status(500).send({
       error: "Something went wrong, check your arguments",
+    });
+  }
+});
+
+app.post("/depin", async (req, res) => {
+  try {
+    const { address, signature, method, params } = req.body;
+
+    // Validate required fields
+    if (!address || typeof address !== 'string') {
+      return res.status(400).send({
+        error: "Missing or invalid address",
+        description: "Request must include a valid 'address' field",
+      });
+    }
+
+    if (!signature || typeof signature !== 'string') {
+      return res.status(400).send({
+        error: "Missing or invalid signature",
+        description: "Request must include a valid 'signature' field (base64-encoded)",
+      });
+    }
+
+    if (!method || typeof method !== 'string') {
+      return res.status(400).send({
+        error: "Missing or invalid method",
+        description: "Request must include a valid 'method' field",
+      });
+    }
+
+    if (!Array.isArray(params)) {
+      return res.status(400).send({
+        error: "Missing or invalid params",
+        description: "Request must include a 'params' array",
+      });
+    }
+
+    // Check whitelist
+    if (!isWhitelisted(method, params)) {
+      console.log("DePIN: Not whitelisted", method);
+      return res.status(404).send({
+        error: "Not in whitelist",
+        description: "Method " + method + " is not supported",
+      });
+    }
+
+    // Get active DePIN node
+    const depinNode = getDePinNode();
+    const depinUrl = depinNode.depinUrl;
+
+    // Create a signature verification function
+    // In this proxy mode, the signature is already provided by the client
+    const signMessage = async (challenge) => signature;
+
+    // Execute DePIN RPC call
+    const result = await depinService.executeDePinRPC(
+      depinUrl,
+      address,
+      signMessage,
+      method,
+      params
+    );
+
+    // Reset counter if too large
+    if (numberOfRequests > Number.MAX_SAFE_INTEGER - 1000) {
+      numberOfRequests = 0;
+    }
+    numberOfRequests++;
+
+    return res.send({ result });
+  } catch (e) {
+    console.log("DePIN ERROR", e);
+    return res.status(500).send({
+      error: e.message || "Something went wrong with DePIN request",
     });
   }
 });

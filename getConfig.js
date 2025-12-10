@@ -17,13 +17,23 @@ function getConfig() {
             "name": "Node number 1",
             "username": "dauser",
             "password": "dapassword",
-            "neurai_url": "http://localhost:19101"
+            "neurai_url": "http://localhost:19001",
+            "depin_enabled": true,
+            "depin_url": "http://localhost:19002"
           },
           {
-            "name": "Node number 2", 
-            "neurai_url": "http://localhost:19111",
+            "name": "Node number 2 (no DePIN)", 
+            "neurai_url": "http://localhost:19101",
             "password": "secret",
-            "username": "secret"
+            "username": "secret",
+            "depin_enabled": false
+          },
+          {
+            "name": "Node number 3 (DePIN auto-port)",
+            "username": "user3",
+            "password": "pass3",
+            "neurai_url": "http://localhost:19001",
+            "depin_enabled": true
           }
         ]
       }

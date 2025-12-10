@@ -1,0 +1,31 @@
+{
+  "concurrency": 4,
+  "endpoint": "https://rpc-main.neurai.org/rpc",
+  "environment": "Neurai Mainnet",
+  "local_port": 19999,
+  "nodes": [
+    {
+      "name": "Local Neurai Node with DePIN",
+      "username": "your_rpc_username",
+      "password": "your_rpc_password",
+      "neurai_url": "http://localhost:19001",
+      "depin_enabled": true,
+      "depin_url": "http://localhost:19002"
+    },
+    {
+      "name": "Remote Node without DePIN",
+      "username": "remote_user",
+      "password": "remote_pass",
+      "neurai_url": "http://remote-server.com:19001",
+      "depin_enabled": false
+    },
+    {
+      "name": "Node with custom DePIN port",
+      "username": "user",
+      "password": "pass",
+      "neurai_url": "http://localhost:19001",
+      "depin_enabled": true,
+      "depin_url": "http://localhost:29002"
+    }
+  ]
+}
