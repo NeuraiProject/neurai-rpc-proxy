@@ -163,6 +163,17 @@ async function addToQueue(request, response) {
           return response.send({ result });
         })
         .catch((error) => {
+          // Handle checkdepinvalidity on non-DePIN assets gracefully
+          if (method === 'checkdepinvalidity' && error.message && error.message.includes('must start with &')) {
+            // Return a valid response indicating it's not a DePIN asset
+            return response.send({ 
+              result: {
+                valid: false,
+                isDePinAsset: false,
+                message: 'Not a DePIN asset (assets must start with & to be DePIN assets)'
+              }
+            });
+          }
           return response.status(500).send({
             error,
           });
@@ -244,6 +255,14 @@ app.post("/depin", async (req, res) => {
   try {
     const { address, signature, method, params } = req.body;
 
+    // Debug log
+    console.log("DePIN Request:", {
+      address,
+      signature: signature ? signature.substring(0, 20) + "..." : "none",
+      method,
+      params
+    });
+
     // Validate required fields
     if (!address || typeof address !== 'string') {
       return res.status(400).send({
@@ -290,13 +309,42 @@ app.post("/depin", async (req, res) => {
     // In this proxy mode, the signature is already provided by the client
     const signMessage = async (challenge) => signature;
 
+    // Handle IP injection for depingetmsg and depinsendmsg
+    let modifiedParams = params;
+    
+    if (method === 'depingetmsg' && params && params.length >= 2) {
+      // depingetmsg requires: "token" "ip[:port]" "fromaddress"
+      // If second param is empty or placeholder, inject the node's IP
+      if (!params[1] || params[1] === '' || params[1] === 'auto') {
+        // Extract IP:port from depinUrl
+        const urlMatch = depinUrl.match(/^https?:\/\/([^\/]+)/);
+        const nodeIpPort = urlMatch ? urlMatch[1] : 'localhost:19002';
+        
+        modifiedParams = [...params];
+        modifiedParams[1] = nodeIpPort;
+      }
+    }
+    
+    if (method === 'depinsendmsg' && params && params.length >= 2) {
+      // depinsendmsg requires: "token" "ip[:port]" "message" "fromaddress" (port)
+      // If second param is empty or placeholder, inject the node's IP
+      if (!params[1] || params[1] === '' || params[1] === 'auto') {
+        // Extract IP:port from depinUrl
+        const urlMatch = depinUrl.match(/^https?:\/\/([^\/]+)/);
+        const nodeIpPort = urlMatch ? urlMatch[1] : 'localhost:19002';
+        
+        modifiedParams = [...params];
+        modifiedParams[1] = nodeIpPort;
+      }
+    }
+
     // Execute DePIN RPC call
     const result = await depinService.executeDePinRPC(
       depinUrl,
       address,
       signMessage,
       method,
-      params
+      modifiedParams
     );
 
     // Reset counter if too large
@@ -307,7 +355,8 @@ app.post("/depin", async (req, res) => {
 
     return res.send({ result });
   } catch (e) {
-    console.log("DePIN ERROR", e);
+    console.log("DePIN ERROR:", e.message);
+    console.log("Full error:", e);
     return res.status(500).send({
       error: e.message || "Something went wrong with DePIN request",
     });
