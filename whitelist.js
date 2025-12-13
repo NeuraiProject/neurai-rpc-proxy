@@ -162,6 +162,7 @@ const whitelist = [
 
   //== Depin messaging ==
   //"depinclearmsg",
+  "depinreceivemsg",
   "depingetmsg",
   "depingetmsginfo",
   "depingetpoolcontent",
