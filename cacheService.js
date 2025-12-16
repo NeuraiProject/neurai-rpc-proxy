@@ -184,6 +184,7 @@ function shouldCache(method) {
     "depingetpoolcontent",
     "depinmcpstatus",
     "depinpoolstats",
+    "depinpoolpkey",
     //  "depinsendmsg", // Write command - do not cache
     //  "depinsubmitmsg", // Write command - do not cache
     "== Wallet ==",

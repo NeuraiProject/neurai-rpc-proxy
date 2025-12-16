@@ -168,6 +168,7 @@ const whitelist = [
   "depingetpoolcontent",
   "depinmcpstatus",
   "depinpoolstats",
+  "depinpoolpkey",
   "depinsendmsg",
   "depinsubmitmsg",
 
