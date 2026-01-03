@@ -175,6 +175,7 @@ function shouldCache(method) {
     "checkdepinvalidity",
     //  "freezedepin",
     "listdepinholders",
+    "listdepinaddresses",
     //  "selfrevokedepin",
     //  "unfreezedepin",
     "== Depin messaging ==",

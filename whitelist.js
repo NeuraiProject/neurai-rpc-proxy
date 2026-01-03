@@ -157,6 +157,7 @@ const whitelist = [
   "checkdepinvalidity",
   //"freezedepin",
   "listdepinholders",
+  "listdepinaddresses",
   //"selfrevokedepin",
   //"unfreezedepin",
 
