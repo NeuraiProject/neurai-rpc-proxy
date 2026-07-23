@@ -1,0 +1,78 @@
+name: neurai-wallet-rpc-mainnet
+
+services:
+  neuraid:
+    image: neuraiproject/neurai-node:v1.0.5
+    restart: unless-stopped
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    volumes:
+      - neurai_data_mainnet:/data
+      - ./neurai.conf:/data/node/neurai.conf:ro
+
+    networks:
+      - neurai_net_mainnet
+
+    healthcheck:
+
+      test: ["CMD", "neurai-cli", "-datadir=/data/node", "getblockchaininfo"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  rpc-proxy:
+    build:
+      context: ../..
+      dockerfile: docker/proxy-rpc/Dockerfile
+    image: neurai-rpc-proxy:local
+    restart: unless-stopped
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    environment:
+      PROXY_PORT: "19010"
+      PROXY_CONCURRENCY: "4"
+      PROXY_ENVIRONMENT: "Neurai"
+      PROXY_HEADING: "Neurai RPC Proxy (mainnet)"
+      PROXY_ENDPOINT: "https://rpc-main.neurai.org/rpc"
+
+      NEURAI_NODE_NAME: "neuraid-mainnet"
+      NEURAI_NODE_URL: "http://neuraid:19001"
+      NEURAI_RPC_USER: "neurai"
+      NEURAI_RPC_PASSWORD: "changeme"
+      NEURAI_DEPIN_ENABLED: "false"
+      # NEURAI_DEPIN_URL: "http://neuraid:19002"
+
+    ports:
+      - "127.0.0.1:19010:19010"
+
+    networks:
+      - neurai_net_mainnet
+
+    depends_on:
+      neuraid:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:19010/settings || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  neurai_data_mainnet:
+    driver: local
+
+networks:
+  neurai_net_mainnet:
+    driver: bridge
