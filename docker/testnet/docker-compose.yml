@@ -23,10 +23,12 @@ services:
       NEURAI_REST: "1"
 
       # ── RPC ──────────────────────────────────────────────────────────────
-      NEURAI_RPC_USER: "neurai"
-      NEURAI_RPC_PASSWORD: "changeme"
+      # RPC user/pass/port come from .env so the proxy connects with the exact
+      # same values — change them once in .env, both services follow.
+      NEURAI_RPC_USER: "${NODE_RPC_USER:-neurai}"
+      NEURAI_RPC_PASSWORD: "${NODE_RPC_PASSWORD:-neuraipassword12}"
       NEURAI_RPC_ALLOW_IP: "0.0.0.0/0"
-      NEURAI_RPC_PORT: "19101"
+      NEURAI_RPC_PORT: "${NODE_RPC_PORT:-19101}"
       NEURAI_RPC_TIMEOUT: "240"
       NEURAI_RPC_WORKQUEUE: "64"
       NEURAI_RPC_THREADS: "8"
@@ -43,7 +45,8 @@ services:
       NEURAI_ZMQ_ENABLED: "1"
       NEURAI_ZMQ_BIND: "tcp://0.0.0.0:28332"
       NEURAI_DEPIN_ENABLED: "1"
-      NEURAI_DEPIN_TOKEN: "DEPINTESTING"
+      # Dedicated DePIN assets carry the '&' prefix — it is part of the name.
+      NEURAI_DEPIN_TOKEN: "&DEPINTESTING"
       NEURAI_DEPIN_PORT: "19102"
       NEURAI_DEPIN_MAX_MESSAGE_SIZE: "1024"
       NEURAI_DEPIN_MESSAGE_EXPIRY: "168"
@@ -80,21 +83,25 @@ services:
 
     environment:
       # ── Proxy HTTP server ────────────────────────────────────────────────
-      PROXY_PORT: "19110"
+      PROXY_PORT: "${PROXY_PORT:-19222}"
       PROXY_CONCURRENCY: "4"
       PROXY_ENVIRONMENT: "Neurai Testnet"
       PROXY_HEADING: "Neurai RPC Proxy (testnet)"
       PROXY_ENDPOINT: "https://rpc-testnet.neurai.org/rpc"
 
       NEURAI_NODE_NAME: "neuraid-testnet"
-      NEURAI_NODE_URL: "http://neuraid:19101"
-      NEURAI_RPC_USER: "neurai"
-      NEURAI_RPC_PASSWORD: "neuraipassword12"
+      # Upstream URL is built from the SAME NODE_RPC_PORT the node uses, so a
+      # port change in .env updates both sides automatically.
+      NEURAI_NODE_URL: "http://neuraid:${NODE_RPC_PORT:-19101}"
+      NEURAI_RPC_USER: "${NODE_RPC_USER:-neurai}"
+      NEURAI_RPC_PASSWORD: "${NODE_RPC_PASSWORD:-neuraipassword12}"
       NEURAI_DEPIN_ENABLED: "false"
       # NEURAI_DEPIN_URL: "http://neuraid:19102"
 
     ports:
-      - "127.0.0.1:19110:19110"
+      # PROXY_BIND + PROXY_PORT from .env. Host and container port are the same
+      # single value; PROXY_BIND picks loopback (secure) vs 0.0.0.0 (public).
+      - "${PROXY_BIND:-127.0.0.1}:${PROXY_PORT:-19222}:${PROXY_PORT:-19222}"
 
     networks:
       - neurai_net_testnet
@@ -104,7 +111,7 @@ services:
         condition: service_healthy
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:19110/settings || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:${PROXY_PORT:-19222}/settings || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
