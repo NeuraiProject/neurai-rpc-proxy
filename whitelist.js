@@ -158,6 +158,7 @@ const whitelist = [
   //"freezedepin",
   "listdepinholders",
   "listdepinaddresses",
+  "listpqaddresses",
   //"selfrevokedepin",
   //"unfreezedepin",
 
