@@ -172,6 +172,7 @@ function shouldCache(method) {
     "validateaddress",
     "verifymessage",
     "== Depin asset ==",
+    // Chain-derived, so the per-block cache is correct for these.
     "checkdepinvalidity",
     //  "freezedepin",
     "listdepinholders",
@@ -179,13 +180,18 @@ function shouldCache(method) {
     //  "selfrevokedepin",
     //  "unfreezedepin",
     "== Depin messaging ==",
+    // NOTHING here is cacheable. The cache is invalidated on a new best block
+    // hash, but the message pool does not follow blocks: a message that lands in
+    // the pool would stay invisible until the next block.
     //  "depinclearmsg",
-    "depingetmsg",
-    "depingetmsginfo",
-    "depingetpoolcontent",
-    "depinmcpstatus",
-    "depinpoolstats",
-    "depinpoolpkey",
+    //  "depingetmsginfo",     // messages, memoryusage, oldest/newestmessage
+    //  "depingetpoolcontent", // pool contents
+    //  "depinmcpstatus",      // commands_processed, tasks_in_flight, last_poll_time
+    //  "depinpoolstats",      // pool statistics
+    //  "depinreceivemsg",     // pool contents
+    //  "depinlistsections",   // with an address it returns per-section message
+    //                         // counts, and shouldCache() only sees the method
+    //                         // name, so the two shapes cannot be told apart
     //  "depinsendmsg", // Write command - do not cache
     //  "depinsubmitmsg", // Write command - do not cache
     "== Wallet ==",

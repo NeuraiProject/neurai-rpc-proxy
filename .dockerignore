@@ -19,6 +19,7 @@ docker/node
 docker/proxy-rpc/Dockerfile
 
 *.md
+docs
 
 # Tests and coverage are not run inside the container.
 *.test.js

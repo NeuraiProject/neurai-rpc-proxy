@@ -49,8 +49,9 @@ services:
       NEURAI_NODE_URL: "http://neuraid:19001"
       NEURAI_RPC_USER: "neurai"
       NEURAI_RPC_PASSWORD: "changeme"
-      NEURAI_DEPIN_ENABLED: "false"
-      # NEURAI_DEPIN_URL: "http://neuraid:19002"
+      # No DePIN settings here: the depin* commands are regular RPCs on
+      # NEURAI_NODE_URL. The gateway (TCP 19002) is node-to-node only and the
+      # proxy never connects to it.
 
     ports:
       - "127.0.0.1:19010:19010"
