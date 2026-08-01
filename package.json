@@ -4,10 +4,9 @@
   "description": "Neurai Web API via safe proxy",
   "main": "index.js",
   "dependencies": {
-    "@neuraiproject/neurai-rpc": "^0.4.7",
+    "@neuraiproject/neurai-rpc": "^0.5.1",
     "cors": "2.8.5",
     "express": "^4.21.2",
-    "node-fetch": "^2.7.0",
     "p-queue": "6.6.2"
   },
   "scripts": {

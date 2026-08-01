@@ -95,8 +95,9 @@ services:
       NEURAI_NODE_URL: "http://neuraid:${NODE_RPC_PORT:-19101}"
       NEURAI_RPC_USER: "${NODE_RPC_USER:-neurai}"
       NEURAI_RPC_PASSWORD: "${NODE_RPC_PASSWORD:-neuraipassword12}"
-      NEURAI_DEPIN_ENABLED: "false"
-      # NEURAI_DEPIN_URL: "http://neuraid:19102"
+      # No DePIN settings here: the depin* commands are regular RPCs on
+      # NEURAI_NODE_URL. The gateway (TCP 19102, see NEURAI_DEPIN_PORT on the
+      # neuraid service) is node-to-node only and the proxy never connects to it.
 
     ports:
       # PROXY_BIND + PROXY_PORT from .env. Host and container port are the same

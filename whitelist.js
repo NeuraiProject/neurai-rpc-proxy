@@ -153,26 +153,36 @@ const whitelist = [
   "verifymessage",
 
   //== Depin asset ==
+  // Methods below are chain queries: they work with disablewallet=1.
+  // Anything that needs keys in the node's wallet stays out — see the block at
+  // the end of this section.
   "getpubkey",
   "checkdepinvalidity",
   //"freezedepin",
+  "depingetancestorrecipients",
   "listdepinholders",
   "listdepinaddresses",
-  "listpqaddresses",
   //"selfrevokedepin",
   //"unfreezedepin",
 
   //== Depin messaging ==
   //"depinclearmsg",
   "depinreceivemsg",
-  "depingetmsg",
+  "depinlistsections",
   "depingetmsginfo",
   "depingetpoolcontent",
   "depinmcpstatus",
   "depinpoolstats",
-  "depinpoolpkey",
-  "depinsendmsg",
-  "depinsubmitmsg",
+  "depinsubmitmsg", //Write, but non-custodial: the client encrypts and signs
+
+  //== Depin — requires a wallet in the node, so unusable with disablewallet=1 ==
+  // Re-enable individually if this proxy ever fronts a node with a wallet.
+  // depinpoolpkey is the first one worth restoring: without it depinreceivemsg
+  // has no privacy layer.
+  //"depingetmsg",       // decrypts with the node's wallet keys
+  //"depinsendmsg",      // fromaddress must be a wallet address (signs+encrypts)
+  //"depinpoolpkey",     // needs the wallet loaded and unlocked at startup
+  //"listpqaddresses",   // lists PQ addresses *in the wallet*
 
   //== Wallet ==
   /*

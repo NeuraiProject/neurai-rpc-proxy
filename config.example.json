@@ -5,27 +5,22 @@
   "local_port": 19999,
   "nodes": [
     {
-      "name": "Local Neurai Node with DePIN",
+      "name": "Local Neurai Node",
       "username": "your_rpc_username",
       "password": "your_rpc_password",
-      "neurai_url": "http://localhost:19001",
-      "depin_enabled": true,
-      "depin_url": "http://localhost:19002"
+      "neurai_url": "http://localhost:19001"
     },
     {
-      "name": "Remote Node without DePIN",
+      "name": "Remote Node",
       "username": "remote_user",
       "password": "remote_pass",
-      "neurai_url": "http://remote-server.com:19001",
-      "depin_enabled": false
+      "neurai_url": "http://remote-server.com:19001"
     },
     {
-      "name": "Node with custom DePIN port",
+      "name": "Testnet Node",
       "username": "user",
       "password": "pass",
-      "neurai_url": "http://localhost:19001",
-      "depin_enabled": true,
-      "depin_url": "http://localhost:29002"
+      "neurai_url": "http://localhost:19101"
     }
   ]
 }

@@ -1,9 +1,9 @@
 const { methods } = require("@neuraiproject/neurai-rpc");
-const { getRPCNode, getNodes, getDePinNode, getDePinNodes } = require("./getRPCNode");
+const { getRPCNode, getNodes } = require("./getRPCNode");
 const { default: PQueue } = require("p-queue"); //NOTE version 6 with support for CommonJS
 const process = require("process"); //to get memory used
 const cacheService = require("./cacheService");
-const depinService = require("./depinService");
+const { getRPCErrorMessage } = require("./rpcError");
 const cors = require("cors");
 const express = require("express");
 const getConfig = require("./getConfig");
@@ -39,9 +39,10 @@ therefor we store a promise to get best block hash, and that promise is blanked 
 
 let lastBestBlockHash = null;
 let bestBlockHashPromise = null;
+//unref so this timer alone never keeps the process alive
 setInterval(() => {
   bestBlockHashPromise = null;
-}, 300);
+}, 300).unref();
 
 const app = express();
 app.use(cors());
@@ -78,12 +79,7 @@ app.get("/getCache", (_, res) => {
   obj.queueSize = queue.size;
   obj.numberOfRequests = numberOfRequests.toLocaleString();
   obj.methods = cacheService.getMethods();
-  obj.depinChallenges = depinService.getCacheStats();
-  const nodes = getNodes();
-  const depinNodes = getDePinNodes();
-
-  obj.nodes = nodes;
-  obj.depinNodes = depinNodes;
+  obj.nodes = getNodes();
   return res.send(obj);
 });
 app.get("/settings", (req, res) => {
@@ -158,15 +154,24 @@ async function addToQueue(request, response) {
         const rpc = node.rpc;
         promise = rpc(method, params);
       }
-      promise
+      // Return the HANDLED chain, not the raw promise. Returning `promise` here
+      // leaked the rejection into p-queue, where nothing awaited it, so every
+      // failing RPC produced an unhandledRejection that only the global handler
+      // above caught. 0.5.x makes that far more frequent: JSON-RPC errors that
+      // arrive with HTTP 200 used to resolve undefined and now reject.
+      return promise
         .then((result) => {
           return response.send({ result });
         })
         .catch((error) => {
-          // Handle checkdepinvalidity on non-DePIN assets gracefully
-          if (method === 'checkdepinvalidity' && error.message && error.message.includes('must start with &')) {
+          // Handle checkdepinvalidity on non-DePIN assets gracefully.
+          // The library rejects with {error, description} (JSON-RPC error, now
+          // also on HTTP 200) or {statusText, status, description, error} — never
+          // with a plain .message, so read every shape.
+          const rpcErrorMessage = getRPCErrorMessage(error);
+          if (method === 'checkdepinvalidity' && rpcErrorMessage.includes('must start with &')) {
             // Return a valid response indicating it's not a DePIN asset
-            return response.send({ 
+            return response.send({
               result: {
                 valid: false,
                 isDePinAsset: false,
@@ -178,13 +183,13 @@ async function addToQueue(request, response) {
             error,
           });
         });
-      return promise;
     } catch (e) {
       console.log("Error!", e);
       return Promise.resolve();
     }
   }
-  queue.add(work);
+  //return it so the .catch() at the call site is real
+  return queue.add(work);
 }
 app.post("/rpc", async (req, res) => {
   try {
@@ -251,120 +256,32 @@ app.post("/rpc", async (req, res) => {
   }
 });
 
-app.post("/depin", async (req, res) => {
-  try {
-    const { address, signature, method, params } = req.body;
+// The /depin endpoint has been retired. It fronted the DePIN messaging gateway
+// (raw TCP, port 19002) over HTTP, which never matched the gateway's protocol, and
+// its signature flow was unrealizable: the client had to supply a signature before
+// the single-use challenge it was meant to sign existed.
+//
+// Every depin* command is a regular node RPC served on the standard RPC port, so
+// they go through POST /rpc like any other method. To publish a message use
+// depinsubmitmsg with a payload already encrypted and signed by the client.
+app.all("/depin", (req, res) => {
+  res.status(410).send({
+    error: "Gone",
+    description:
+      "The /depin endpoint has been removed. DePIN commands are regular node RPCs: " +
+      "use POST /rpc. To send a message use depinsubmitmsg with a payload already " +
+      "encrypted and signed client-side.",
+  });
+});
 
-    // Debug log
-    console.log("DePIN Request:", {
-      address,
-      signature: signature ? signature.substring(0, 20) + "..." : "none",
-      method,
-      params
-    });
-
-    // Validate required fields
-    if (!address || typeof address !== 'string') {
-      return res.status(400).send({
-        error: "Missing or invalid address",
-        description: "Request must include a valid 'address' field",
-      });
-    }
-
-    if (!signature || typeof signature !== 'string') {
-      return res.status(400).send({
-        error: "Missing or invalid signature",
-        description: "Request must include a valid 'signature' field (base64-encoded)",
-      });
-    }
-
-    if (!method || typeof method !== 'string') {
-      return res.status(400).send({
-        error: "Missing or invalid method",
-        description: "Request must include a valid 'method' field",
-      });
-    }
-
-    if (!Array.isArray(params)) {
-      return res.status(400).send({
-        error: "Missing or invalid params",
-        description: "Request must include a 'params' array",
-      });
-    }
-
-    // Check whitelist
-    if (!isWhitelisted(method, params)) {
-      console.log("DePIN: Not whitelisted", method);
-      return res.status(404).send({
-        error: "Not in whitelist",
-        description: "Method " + method + " is not supported",
-      });
-    }
-
-    // Get active DePIN node
-    const depinNode = getDePinNode();
-    const depinUrl = depinNode.depinUrl;
-
-    // Create a signature verification function
-    // In this proxy mode, the signature is already provided by the client
-    const signMessage = async (challenge) => signature;
-
-    // Handle IP injection for depingetmsg and depinsendmsg
-    let modifiedParams = params;
-    
-    if (method === 'depingetmsg' && params && params.length >= 2) {
-      // depingetmsg requires: "token" "ip[:port]" "fromaddress"
-      // If second param is empty or placeholder, inject the node's IP
-      if (!params[1] || params[1] === '' || params[1] === 'auto') {
-        // Extract IP:port from depinUrl
-        const urlMatch = depinUrl.match(/^https?:\/\/([^\/]+)/);
-        const nodeIpPort = urlMatch ? urlMatch[1] : 'localhost:19002';
-        
-        modifiedParams = [...params];
-        modifiedParams[1] = nodeIpPort;
-      }
-    }
-    
-    if (method === 'depinsendmsg' && params && params.length >= 2) {
-      // depinsendmsg requires: "token" "ip[:port]" "message" "fromaddress" (port)
-      // If second param is empty or placeholder, inject the node's IP
-      if (!params[1] || params[1] === '' || params[1] === 'auto') {
-        // Extract IP:port from depinUrl
-        const urlMatch = depinUrl.match(/^https?:\/\/([^\/]+)/);
-        const nodeIpPort = urlMatch ? urlMatch[1] : 'localhost:19002';
-        
-        modifiedParams = [...params];
-        modifiedParams[1] = nodeIpPort;
-      }
-    }
-
-    // Execute DePIN RPC call
-    const result = await depinService.executeDePinRPC(
-      depinUrl,
-      address,
-      signMessage,
-      method,
-      modifiedParams
+// Only listen when started as a program. Requiring this file (integration tests)
+// gives you the configured Express app without binding a port.
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(
+      `RPC Proxy listening on path /rpc on port port ${port}, call me later`
     );
+  });
+}
 
-    // Reset counter if too large
-    if (numberOfRequests > Number.MAX_SAFE_INTEGER - 1000) {
-      numberOfRequests = 0;
-    }
-    numberOfRequests++;
-
-    return res.send({ result });
-  } catch (e) {
-    console.log("DePIN ERROR:", e.message);
-    console.log("Full error:", e);
-    return res.status(500).send({
-      error: e.message || "Something went wrong with DePIN request",
-    });
-  }
-});
-
-app.listen(port, () => {
-  console.log(
-    `RPC Proxy listening on path /rpc on port port ${port}, call me later`
-  );
-});
+module.exports = app;
