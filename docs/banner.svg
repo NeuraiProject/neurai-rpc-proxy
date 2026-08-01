@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 240" width="1280" height="240" role="img" aria-label="neurai-rpc-proxy — a whitelisted HTTP gateway in front of a Neurai node, with end-to-end encrypted DePIN messaging">
+  <!--
+    Flat, no gradients. Colours are the light-mode design tokens of
+    https://faucet-testnet.neurai.org:
+      bg #f4f4f6 · card #ffffff · border #e5e7eb · text #111827 · label #6b7280
+      orange #f97316 · orange-hover #ea6c10 · orange-light #fff7ed · orange-border #fed7aa
+      radius-card 16 · radius-inner 10
+  -->
+  <rect width="1280" height="240" rx="16" fill="#f4f4f6"/>
+  <rect x="0.5" y="0.5" width="1279" height="239" rx="16" fill="none" stroke="#e5e7eb"/>
+
+  <!-- wordmark -->
+  <text x="56" y="94" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="40" font-weight="700" fill="#111827" letter-spacing="-0.5">neurai-rpc-proxy</text>
+  <text x="58" y="128" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="17" fill="#6b7280">A Web API for Neurai — the blockchain over plain HTTP</text>
+
+  <!-- spec strip: label above, value below, anchored by the orange rule -->
+  <g font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+    <rect x="58" y="152" width="3" height="44" rx="1.5" fill="#f97316"/>
+    <g font-size="10" fill="#6b7280" letter-spacing="1.2" font-weight="600">
+      <text x="76" y="168">WHITELIST</text>
+      <text x="212" y="168">CACHE</text>
+      <text x="348" y="168">QUEUE</text>
+    </g>
+    <g font-size="13" fill="#111827">
+      <text x="76" y="188">approved methods</text>
+      <text x="212" y="188">per block hash</text>
+      <text x="348" y="188">bounded workers</text>
+    </g>
+    <rect x="196" y="152" width="1" height="44" fill="#e5e7eb"/>
+    <rect x="332" y="152" width="1" height="44" fill="#e5e7eb"/>
+  </g>
+
+  <!-- flow: web app -> proxy -> node -->
+  <g font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+    <!-- web app -->
+    <rect x="660" y="72" width="124" height="56" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+    <rect x="660" y="72" width="124" height="16" rx="8" fill="#f4f4f6"/>
+    <circle cx="674" cy="80" r="2.6" fill="#d1d5db"/>
+    <circle cx="683" cy="80" r="2.6" fill="#e5e7eb"/>
+    <text x="722" y="114" text-anchor="middle" font-size="15" fill="#111827">web app</text>
+
+    <!-- arrow -->
+    <path d="M792 100 H832" stroke="#f97316" stroke-width="2" fill="none"/>
+    <path d="M840 100 l-9 -5.5 v11 z" fill="#f97316"/>
+    <text x="816" y="84" text-anchor="middle" font-size="10" fill="#9ca3af" letter-spacing="0.5">HTTP</text>
+
+    <!-- proxy -->
+    <rect x="848" y="60" width="170" height="80" rx="10" fill="#ffffff" stroke="#f97316" stroke-width="2"/>
+    <text x="933" y="94" text-anchor="middle" font-size="19" font-weight="600" fill="#111827">RPC proxy</text>
+    <text x="933" y="118" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#ea6c10">POST /rpc</text>
+
+    <!-- arrow -->
+    <path d="M1026 100 H1066" stroke="#f97316" stroke-width="2" fill="none"/>
+    <path d="M1074 100 l-9 -5.5 v11 z" fill="#f97316"/>
+    <text x="1050" y="84" text-anchor="middle" font-size="10" fill="#9ca3af" letter-spacing="0.5">RPC</text>
+
+    <!-- node -->
+    <rect x="1082" y="72" width="142" height="56" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+    <circle cx="1106" cy="100" r="7" fill="none" stroke="#f97316" stroke-width="1.5"/>
+    <circle cx="1106" cy="100" r="2.5" fill="#f97316"/>
+    <text x="1166" y="106" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#111827">neuraid</text>
+
+    <!-- DePIN lane: same path, payload encrypted by the client -->
+    <path d="M933 140 V168" stroke="#fed7aa" stroke-width="2" fill="none"/>
+    <rect x="848" y="168" width="376" height="40" rx="10" fill="#fff7ed" stroke="#fed7aa"/>
+    <g transform="translate(874, 180)">
+      <path d="M2.4 6 V3.6 a3.6 3.6 0 0 1 7.2 0 V6" fill="none" stroke="#f97316" stroke-width="1.6"/>
+      <rect x="0" y="6" width="12" height="10" rx="2.5" fill="#f97316"/>
+      <circle cx="6" cy="11" r="1.6" fill="#fff7ed"/>
+    </g>
+    <text x="902" y="193" font-size="14" font-weight="700" fill="#ea6c10">DePIN</text>
+    <text x="956" y="193" font-size="13.5" fill="#6b7280">end-to-end encrypted messaging</text>
+  </g>
+</svg>

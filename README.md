@@ -1,3 +1,5 @@
+![neurai-rpc-proxy — a whitelisted HTTP gateway in front of a Neurai node](docs/banner.svg)
+
 # neurai-rpc-proxy
 
 ## A Web API for Neurai
@@ -9,9 +11,6 @@ Check out this software live at:
 **MAIN**: https://rpc-main.neurai.org
 
 **TESTNET**: https://rpc-testnet.neurai.org
-
-
-![image](https://user-images.githubusercontent.com/9694984/226344965-7f01cee1-99ef-4a7f-b9db-8cfce4ccb5e8.png)
 
 ## Features
 
@@ -192,6 +191,18 @@ assetindex=1
 
 # Timestamp index
 timestampindex=1
+
+# Maintains the full Spent index on your node. Default is 0.
+spentindex=1
+
+# Username and password - set secure username/password
+rpcuser=secret
+rpcpassword=secret
+
+# What IP address is allowed to make calls to the RPC server.
+rpcallowip=127.0.0.1
+
+dbcache=4096
 ```
 
 **For DePIN messaging (add to above):**
@@ -233,19 +244,6 @@ right token. If the pool did not initialize, check the asset exists with
 `depinlistsections` and `depinpoolpkey` need a node from July 2026 or newer.
 `createrawtransaction`'s `refinputs` parameter needs one from April 2026.
 
-#Maintains the full Spent index on your node. Default is 0.
-spentindex=1
-
-#Username and password - set secure username/password
-rpcuser=secret
-rpcpassword=secret
-
-#What IP address is allowed to make calls to the RPC server.
-rpcallowip=127.0.0.1
-
-dbcache=4096
-```
-
 ## Sir, how do I start this application?
 
 ```
@@ -254,7 +252,6 @@ npm start
 
 ## Help with Neurai RPC calls, arguments and stuff
 Go to https://xna-main.neurai.org/ for in depth description of each RPC call
-![image](https://user-images.githubusercontent.com/9694984/212323158-6ed00511-cfcc-4338-990c-ebb57f590cf0.png)
 
 
 ## List of Neurai RPC calls
