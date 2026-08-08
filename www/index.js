@@ -1,130 +1,114 @@
-Array.prototype.insert = function (index, ...items) {
-  this.splice(index, 0, ...items);
-};
+const settingsPromise = fetch("/settings").then((response) => {
+  if (!response.ok) throw new Error("Could not load RPC settings");
+  return response.json();
+});
 
-//The settings JSON object as promise, will be (re) used by custom elements
-const settingsPromise = fetch("/settings").then((r) => r.json());
-
-function insertLabelBeforeValue(list, label, value) {
-  const position = list.indexOf(value);
-  list.insert(position, label);
+function rpcCurl(endpoint) {
+  return `curl -sS -X POST '${endpoint}' \\
+  -H 'Content-Type: application/json' \\
+  --data '{"method":"getblockcount","params":[]}'`;
 }
-async function work() {
-  //Fetch Whitelist
-  const response = await fetch("/whitelist");
-  const list = await response.json();
 
-  //Be kind to your users and insert some headings/labels, explains how the whitelist is ordered
-  insertLabelBeforeValue(list, "== Addressindex ==", "getaddressbalance");
-  insertLabelBeforeValue(list, "== Assets ==", "getassetdata");
-  insertLabelBeforeValue(list, "== Blockchain ==", "decodeblock");
-  insertLabelBeforeValue(list, "== Control ==", "help");
-  insertLabelBeforeValue(
-    list,
-    "== Rawtransactions ==",
-    "combinerawtransaction"
-  );
-  insertLabelBeforeValue(
-    list,
-    "== Restricted assets ==",
-    "checkaddressrestriction"
-  );
-  insertLabelBeforeValue(list, "== Util ==", "estimatefee");
-  insertLabelBeforeValue(list, "== Mining ==", "getblocktemplate");
-  /*
-        
-        getassetdata "asset_name"
-    */
+function rpcFetch(endpoint) {
+  return `const response = await fetch("${endpoint}", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ method: "getblockcount", params: [] })
+});
 
+const { result } = await response.json();
+console.log(result);`;
+}
+
+function depinExample(endpoint) {
+  return `fetch("${endpoint}", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    method: "depinlistsections",
+    params: []
+  })
+});`;
+}
+
+async function copyElement(targetId, button) {
+  const text = document.getElementById(targetId)?.textContent || "";
+  if (!text) return;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    const original = button.textContent;
+    button.textContent = "Copied";
+    setTimeout(() => { button.textContent = original; }, 1200);
+  } catch (_) {
+    button.textContent = "Copy failed";
+  }
+}
+
+async function initialiseSettings() {
+  const settings = await settingsPromise;
+  const endpoint = settings.endpoint;
+
+  document.title = `${settings.environment || "Neurai"} RPC`;
+  document.querySelectorAll("[data-setting]").forEach((element) => {
+    element.textContent = settings[element.dataset.setting] || "Neurai";
+  });
+  document.getElementById("endpoint").textContent = endpoint;
+  document.getElementById("rpcCurl").textContent = rpcCurl(endpoint);
+  document.getElementById("rpcFetch").textContent = rpcFetch(endpoint);
+  document.getElementById("depinExample").textContent = depinExample(endpoint);
+}
+
+async function initialiseMethodExplorer() {
   const select = document.getElementById("procedureSelect");
+  const help = document.getElementById("help");
+  const response = await fetch("/whitelist");
+  const methods = await response.json();
 
-  list.map((item) => {
+  methods.forEach((method) => {
+    if (method.startsWith("==")) return;
     const option = document.createElement("option");
-    option.innerText = item;
+    option.value = method;
+    option.textContent = method;
     select.appendChild(option);
   });
 
-  select.addEventListener("change", async function (event) {
-    const value = event.target.value;
-    if (value === "-") {
-      document.getElementById("help").innerHTML = "";
+  select.addEventListener("change", async () => {
+    if (!select.value) {
+      help.textContent = "Select a method to view its node help.";
       return;
     }
-    if (value.startsWith("=") == true) {
-      document.getElementById("help").innerHTML = "";
-      return;
-    }
-    const data = await post("/rpc", { method: "help", params: [value] });
-    document.getElementById("help").innerHTML = data.result;
-  });
-
-  async function fetchCodeExample(url, id) {
-    fetch(url)
-      .then((codeResponse) => codeResponse.text())
-      .then(async (code) => {
-        if (url.indexOf(".html") > -1) {
-          code = code.replaceAll("<", "&lt;");
-        }
-
-        const settings = await settingsPromise;
-        //Update service endpoints in all examples
-        code = code.replaceAll("$ENDPOINT", settings["endpoint"]);
-        code = code.replaceAll("$ENVIRONMENT", settings["environment"]);
-        document.getElementById(id).innerHTML = code;
-        Prism.highlightAll();
+    help.textContent = "Loading node help…";
+    try {
+      const result = await fetch("/rpc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method: "help", params: [select.value] }),
       });
-  }
-  fetchCodeExample("codeexample.js", "codeExample");
-  fetchCodeExample("codeexample_result.json", "codeExampleResult");
-  fetchCodeExample("/demo/index.html", "codeExampleWeb");
+      const body = await result.json();
+      help.textContent = body.result || body.description || "No help returned.";
+    } catch (_) {
+      help.textContent = "Could not retrieve method help from the node.";
+    }
+  });
 }
 
-async function post(url, body) {
-  const jsonString = JSON.stringify(body);
-  const requestOptions = {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: jsonString,
-  };
-  const response = await fetch(url, requestOptions);
-  const data = await response.json();
-  return data;
-}
-
-work();
-
-//An HTML element that prints out the value of "endpoint".
-//We want to print out "Neurai mainnet" or similar och many places and only fetch setting once
-class Settings extends HTMLElement {
-  connectedCallback() {
-    const key = this.getAttribute("key");
-    //When settings are available, print out endpoint
-    settingsPromise.then((settings) => {
-      this.innerHTML = settings[key];
-    });
-  }
-}
-customElements.define("rpc-settings", Settings);
-
-//Update document title
-settingsPromise.then((settings) => {
-  document.title = "RPC " + settings.environment;
+document.querySelectorAll("[data-copy-target]").forEach((button) => {
+  button.addEventListener("click", () => copyElement(button.dataset.copyTarget, button));
 });
 
-function copyEndpoint() {
-  const endpoint = document.getElementById("endpoint").innerText;
-  const button = document.getElementById("copyEndpointButton");
-  const orgButtonText = button.innerText;
-  //Copy to clipboard
+const themeToggle = document.getElementById("themeToggle");
+const preferredTheme = localStorage.getItem("neurai-rpc-theme") || "light";
+document.documentElement.dataset.theme = preferredTheme;
+themeToggle.addEventListener("click", () => {
+  const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = nextTheme;
+  localStorage.setItem("neurai-rpc-theme", nextTheme);
+});
 
-  navigator.clipboard.writeText(endpoint).then(() => {});
-  button.innerHTML = "😊";
-
-  setTimeout(() => {
-    button.innerText = orgButtonText;
-  }, 1000);
-}
-//Copy endpoint button
-document
-  .getElementById("copyEndpointButton")
-  .addEventListener("click", copyEndpoint);
+initialiseSettings().catch(() => {
+  document.getElementById("endpoint").textContent = "Settings unavailable";
+});
+initialiseMethodExplorer().catch(() => {
+  document.getElementById("help").textContent = "The method explorer is unavailable.";
+});

@@ -83,11 +83,28 @@ app.get("/getCache", (_, res) => {
   return res.send(obj);
 });
 app.get("/settings", (req, res) => {
-  //Expose public parts of config
+  // Expose public parts of config. A Docker deployment does not have to know
+  // its public hostname: when endpoint is unset, derive a usable browser URL
+  // instead of leaking the internal service name (for example rpc-proxy).
+  const configuredEndpoint =
+    typeof config.endpoint === "string" ? config.endpoint.trim() : "";
+  let configuredEndpointIsInternal = false;
+  try {
+    configuredEndpointIsInternal = ["rpc-proxy", "neuraid", "localhost", "127.0.0.1", "0.0.0.0"].includes(
+      new URL(configuredEndpoint).hostname
+    );
+  } catch (_) {
+    // An empty or malformed endpoint is handled by the public request URL.
+    configuredEndpointIsInternal = true;
+  }
+  const endpoint =
+    configuredEndpoint && !configuredEndpointIsInternal
+      ? configuredEndpoint
+      : `${req.protocol}://${req.get("host")}/rpc`;
   const obj = {
     heading: config.heading,
     environment: config.environment,
-    endpoint: config.endpoint,
+    endpoint,
   };
   res.send(obj);
 });

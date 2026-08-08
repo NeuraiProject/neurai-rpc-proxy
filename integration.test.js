@@ -55,7 +55,7 @@ beforeAll(async () => {
   // instead of requiring a real config.json on disk.
   jest.doMock("./getConfig", () => () => ({
     concurrency: 4,
-    endpoint: "http://127.0.0.1/rpc",
+    endpoint: "http://rpc-proxy:19999/rpc",
     environment: "integration test",
     heading: "integration test",
     local_port: 0,
@@ -114,6 +114,14 @@ describe("POST /depin is retired", () => {
     const before = fakeNodeRequests.length;
     await post("/depin", { method: "depinpoolstats", params: [] });
     expect(fakeNodeRequests.length).toBe(before);
+  });
+});
+
+describe("GET /settings", () => {
+  test("does not expose a Docker-internal endpoint to browser clients", async () => {
+    const response = await fetch(`${proxyUrl}/settings`);
+    expect(response.status).toBe(200);
+    expect((await response.json()).endpoint).toBe(`${proxyUrl}/rpc`);
   });
 });
 
