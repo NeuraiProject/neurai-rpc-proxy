@@ -15,73 +15,24 @@ Check out this software live at:
 ## Features
 
 - **Standard RPC Proxy** (`/rpc`) - Expose standard Neurai RPC calls with caching
-- **DePIN Support** - DePIN (Decentralized Physical Infrastructure Network) commands are served through `/rpc` like any other method
+- **DePIN Testnet support** - The proxy reaches enabled `depin*` methods through the standard node RPC; it never proxies the node's separate gateway port
 - **Smart Caching** - Cache responses based on block height to reduce node load
 - **Queue Management** - Control concurrent requests to your Neurai node
 - **Whitelist Protection** - Only allow an explicitly approved set of methods. Mostly reads, plus a few writes that carry their own proof (`sendrawtransaction`, `depinsubmitmsg`); anything needing the node's wallet or private keys stays out
 - **Multi-Node Support** - Automatic failover between multiple Neurai nodes
 
-## DePIN Support
+## DePIN
 
-**The `/depin` endpoint has been removed** (it now answers `410 Gone`). Every `depin*`
-command is a regular node RPC served on the standard RPC port, so they go through
-`/rpc` like `getblockcount` or any other whitelisted method — no challenge/response,
-no separate transport.
+The `/depin` endpoint is retired and returns `410 Gone`. The proxy only connects to
+the node's standard HTTP RPC endpoint; enabled `depin*` methods are sent through
+`/rpc` like other whitelisted methods.
 
-The DePIN messaging gateway (raw TCP, port 19002) is a **node-to-node** transport used
-by one node to reach another node's pool. This proxy talks to its own node and never
-connects to it.
-
-Reading is straightforward:
-
-```javascript
-//Pool and section info
-rpc("depingetmsginfo", []).then(console.log);
-rpc("depinlistsections", []).then(console.log);
-
-//Messages for one address, paginated
-rpc("depinreceivemsg", ["&YOURTOKEN", "NYourNeuraiAddress", 0, "", 5]).then(console.log);
-```
-
-### Sending messages
-
-Use `depinsubmitmsg`. The node validates and stores; it never holds your keys:
-
-```javascript
-rpc("depinsubmitmsg", [hexEncodedMessage]).then(console.log);
-```
-
-> **The client must build that payload.** `depinsubmitmsg` takes a `CDepinMessage`
-> that is already serialized, encrypted (ECIES) and signed — either hex-encoded or
-> wrapped as `{sender, encrypted}`. **Neither this proxy nor `@neuraiproject/neurai-rpc`
-> builds it**: the package root (`@neuraiproject/neurai-rpc`) exports only `getRPC` and
-> `methods`, and the Node.js-only subpath `@neuraiproject/neurai-rpc/depin` exports
-> `getDePinRPC` and `requestDePinChallenge` — gateway transport, not cryptography. No
-> primitive in either entry builds the payload. The wire format is documented in
-> the package's `DEPIN_IMPLEMENTATION_GUIDE_EN.md` §3.1 (ECDH → KDF-SHA256 →
-> AES-256-CBC → HMAC-SHA256, payload `ephemeral_pubkey || iv || ciphertext || mac`).
-> Implementing it is a client-side prerequisite.
-
-### Methods that are deliberately NOT whitelisted
-
-These need keys in the node's wallet, and the proxy is meant to front a node running
-with `disablewallet=1`:
-
-| Method | Why |
-|---|---|
-| `depingetmsg` | Decrypts with the node's wallet keys |
-| `depinsendmsg` | `fromaddress` must be a wallet address (signs + encrypts) |
-| `depinpoolpkey` | Needs the wallet loaded and unlocked at startup |
-| `listpqaddresses` | Lists post-quantum addresses *in the wallet* |
-
-`depinpoolpkey` is the first one worth re-enabling if this proxy ever fronts a node
-with a wallet: without it `depinreceivemsg` has no privacy layer.
-
-### Abuse limits
-
-`depinsubmitmsg` is a write that the proxy does not authenticate — the node validates
-integrity, but **this proxy has no rate limiting** (the same is already true of
-`sendrawtransaction`). If you expose it publicly, put rate limiting in front of it.
+The Docker deployments intentionally differ: mainnet uses the stable `v1.0.5` node,
+which has no DePIN messaging implementation, while testnet builds the `DePIN-Test`
+branch and enables it. That branch has an additional, direct TCP gateway whose
+upstream default is port `19002`. It is neither published by the testnet compose file
+nor used by this proxy. Leave `NEURAI_DEPIN_PORT` unset unless a direct gateway client
+needs a non-default port.
 
 
 ## How do I use this software?
@@ -205,44 +156,10 @@ rpcallowip=127.0.0.1
 dbcache=4096
 ```
 
-**For DePIN messaging (add to above):**
-
-Option names come from the `neuraid` binary itself. They all start with `depinmsg`
-(except `depinpoolsize`) — do not use `depin=1` / `depinport`, which the node ignores.
-
-```
-# Enable the DePIN messaging pool. This is what makes the depin* RPCs work.
-depinmsg=1
-
-# Messaging token. MUST be an asset that already exists on chain, INCLUDING the
-# '&' prefix of dedicated DePIN assets. Without the '&' the node never finds the
-# asset, the pool stays uninitialized, and the RPCs fail with "pool not
-# initialized" even though depingetmsginfo still reports enabled:true.
-depinmsgtoken=&YOURTOKEN
-
-# Gateway port. Node-to-node only — this proxy does not use it. Default 19002.
-depinmsgport=19002
-
-# Bind address of the gateway. Only needed if OTHER nodes must reach this pool;
-# the gateway does not authenticate its public methods, so firewall it.
-#depinmsgbind=0.0.0.0
-
-depinmsgsize=1024      # max message size (bytes)
-depinmsgexpire=168     # message expiry (hours)
-depinpoolsize=100      # message pool size (MB)
-
-# REQUIRED for DePIN, on top of the standard indexes above:
-assetindex=1
-pubkeyindex=1
-```
-
-Verify with `neurai-cli depingetmsginfo`: it must report `enabled:true` **and** the
-right token. If the pool did not initialize, check the asset exists with
-`getassetdata "&YOURTOKEN"` — `null` means it does not.
-
-**Node compatibility:** `depinreceivemsg`, `depingetancestorrecipients`,
-`depinlistsections` and `depinpoolpkey` need a node from July 2026 or newer.
-`createrawtransaction`'s `refinputs` parameter needs one from April 2026.
+For the testnet `DePIN-Test` branch, set `depinmsg=1` and `depinmsgtoken` (the
+compose file does this through environment variables). `depinmsgport` is optional and
+defaults to `19002`; it is a direct node gateway, not the proxy's HTTP RPC port.
+The stable `v1.0.5` mainnet node does not accept these options.
 
 ## Sir, how do I start this application?
 

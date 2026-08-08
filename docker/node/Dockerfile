@@ -2,7 +2,9 @@
 FROM debian:12 AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG BRANCH=DePIN-Test
+# Use the current stable upstream release.  The old DePIN-Test branch was an
+# experimental fork and is not compatible with the supported node anymore.
+ARG BRANCH=v1.0.5
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     autoconf \
@@ -87,6 +89,6 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 VOLUME ["/data"]
 
-EXPOSE 19100 19101 28332
+EXPOSE 19002 19100 19101 28332
 
 ENTRYPOINT ["entrypoint.sh"]

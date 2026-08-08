@@ -49,10 +49,12 @@ if [ "${NEURAI_DEPIN_ENABLED:-0}" = "1" ]; then
   fi
   cat >> "$DATA_DIR/neurai.conf" <<EOF
 
-# DePIN messaging (requires assetindex + pubkeyindex, both set above)
+# Supported only by the DePIN-Test node branch.
+# The gateway is separate from the HTTP RPC server; its upstream default is
+# 19002 and the rpc-proxy never connects to it.
 depinmsg=1
 depinmsgtoken=${NEURAI_DEPIN_TOKEN:-}
-depinmsgport=${NEURAI_DEPIN_PORT:-19102}
+depinmsgport=${NEURAI_DEPIN_PORT:-19002}
 depinmsgsize=${NEURAI_DEPIN_MAX_MESSAGE_SIZE:-1024}
 depinmsgexpire=${NEURAI_DEPIN_MESSAGE_EXPIRY:-168}
 depinpoolsize=${NEURAI_DEPIN_MAX_POOL_SIZE:-100}
