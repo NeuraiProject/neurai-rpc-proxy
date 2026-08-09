@@ -7,6 +7,8 @@
       name="description"
       content="A safe, public HTTP RPC gateway for the Neurai blockchain."
     />
+    <link rel="icon" type="image/svg+xml" href="./neurai-logo.svg" />
+    <link rel="apple-touch-icon" href="./neurai-logo.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,6 +18,11 @@
     <title>Neurai RPC</title>
     <style>
       :root {
+        /* One gutter token drives the nav, main and footer so their left edges
+           line up at every width. Mixing 100vw padding with percentage widths
+           used to leave them a few pixels apart. */
+        --gutter: 24px;
+        --maxw: 1160px;
         --page: #f5f5f7;
         --surface: #ffffff;
         --surface-soft: #fff8f3;
@@ -49,31 +56,39 @@
         color: var(--text);
         font-family: Inter, system-ui, sans-serif;
         line-height: 1.55;
+        /* clip, not hidden: it stops a stray overflow from producing a sideways
+           scroll without turning body into a scroll container (which would
+           break the sticky nav). */
+        overflow-x: clip;
       }
 
       button, select { font: inherit; }
       code, pre { font-family: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
       a { color: inherit; }
+      img { max-width: 100%; }
+
+      /* Shared page container: same max width and same gutters everywhere. */
+      .shell {
+        width: 100%;
+        max-width: calc(var(--maxw) + var(--gutter) * 2);
+        margin-inline: auto;
+        padding-inline: var(--gutter);
+      }
 
       .nav {
         position: sticky;
         top: 0;
         z-index: 5;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        height: 68px;
-        padding: 0 max(24px, calc((100vw - 1160px) / 2));
         background: color-mix(in srgb, var(--page) 90%, transparent);
         border-bottom: 1px solid var(--line);
         backdrop-filter: blur(12px);
       }
+      .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 68px; }
 
-      .brand { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; font-weight: 800; letter-spacing: -0.04em; }
+      .brand { display: inline-flex; align-items: center; gap: 11px; min-width: 0; text-decoration: none; font-weight: 800; letter-spacing: -0.04em; }
       .brand-mark {
-        display: grid; place-items: center; width: 33px; height: 33px;
-        color: white; background: var(--orange); border-radius: 10px;
-        font-weight: 800; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
+        flex: none; display: block; width: 34px; height: 34px; border-radius: 50%;
+        box-shadow: 0 4px 12px rgba(69, 0, 98, 0.28);
       }
       .brand small { display: block; color: var(--muted); font-size: 0.64rem; line-height: 1; letter-spacing: 0.11em; font-weight: 700; }
       .brand-title { display: block; font-size: 1.05rem; line-height: 1.05; }
@@ -85,7 +100,6 @@
       .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 15%, transparent); }
       .theme-toggle { cursor: pointer; width: 36px; height: 36px; font-size: 1rem; }
 
-      main { width: min(1160px, calc(100% - 48px)); margin: 0 auto; }
       .hero { padding: 78px 0 56px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr); gap: 64px; align-items: center; }
       .eyebrow { margin: 0 0 15px; color: var(--orange-deep); font-size: 0.72rem; letter-spacing: 0.13em; font-weight: 800; }
       h1 { max-width: 650px; margin: 0; font-size: clamp(2.7rem, 6vw, 5.15rem); line-height: 0.98; letter-spacing: -0.075em; }
@@ -113,7 +127,8 @@
       .section-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 25px; }
       h2 { margin: 0; font-size: clamp(1.75rem, 3vw, 2.4rem); letter-spacing: -0.055em; }
       .section-heading p { max-width: 470px; margin: 0; color: var(--muted); font-size: 0.93rem; }
-      .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+      .steps > *, .info-grid > *, .code-grid > *, .methods-card > * { min-width: 0; }
       .step, .info-card, .methods-card { padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
       .step-number { display: grid; place-items: center; width: 28px; height: 28px; margin-bottom: 16px; border-radius: 50%; color: var(--orange-deep); background: var(--orange-soft); font-size: 0.75rem; font-weight: 800; }
       .step h3, .info-card h3 { margin: 0 0 7px; font-size: 1rem; letter-spacing: -0.02em; }
@@ -126,7 +141,7 @@
       .copy-code { border: 0; padding: 3px; color: var(--orange-deep); background: transparent; cursor: pointer; font-size: 0.76rem; font-weight: 800; }
       pre { min-height: 212px; margin: 0; padding: 18px; overflow-x: auto; background: #171717; color: #f6f2ed; font-size: 0.76rem; line-height: 1.7; }
 
-      .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      .info-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
       .info-card.depin { background: var(--surface-soft); border-color: color-mix(in srgb, var(--orange) 45%, var(--line)); }
       .info-card ul { margin: 13px 0 0; padding-left: 18px; color: var(--muted); font-size: 0.84rem; }
       .info-card li + li { margin-top: 6px; }
@@ -136,35 +151,58 @@
       .methods-card { display: grid; grid-template-columns: 270px 1fr; gap: 18px; }
       select { width: 100%; height: 42px; padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: var(--page); }
       .method-help { min-height: 150px; max-height: 340px; padding: 15px; overflow: auto; border-radius: 10px; background: var(--page); color: var(--muted); white-space: pre-wrap; font-size: 0.77rem; }
-      .footer { width: min(1160px, calc(100% - 48px)); margin: 26px auto 0; padding: 24px 0 36px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.78rem; }
-      .footer a { color: var(--orange-deep); font-weight: 700; text-decoration: none; }
+      .footer { margin-top: 56px; border-top: 1px solid var(--line); background: var(--surface); }
+      .footer-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 34px; padding: 40px 0 30px; }
+      .footer-brand { display: flex; align-items: flex-start; gap: 13px; }
+      .footer-logo { flex: none; width: 40px; height: 40px; }
+      .footer-name { display: block; font-size: 1rem; font-weight: 800; letter-spacing: -0.035em; }
+      .footer-tagline { max-width: 42ch; margin: 5px 0 0; color: var(--muted); font-size: 0.84rem; }
+      .footer-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 56px; }
+      .footer-nav h3 { margin: 0 0 10px; color: var(--muted); font-size: 0.68rem; letter-spacing: 0.12em; font-weight: 800; text-transform: uppercase; }
+      .footer-nav ul { margin: 0; padding: 0; list-style: none; }
+      .footer-nav li + li { margin-top: 7px; }
+      .footer-nav a { color: var(--text); font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+      .footer-nav a:hover { color: var(--orange-deep); }
+      .footer-bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 18px; padding: 15px 0 30px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.76rem; }
+      .footer-bottom a { color: var(--orange-deep); font-weight: 700; text-decoration: none; }
+      .footer-net { display: inline-flex; align-items: center; gap: 7px; }
+      .footer-net b { color: var(--text); font-weight: 700; }
 
       @media (max-width: 800px) {
-        .hero { grid-template-columns: 1fr; gap: 34px; padding-top: 56px; }
-        .steps, .code-grid, .info-grid { grid-template-columns: 1fr; }
-        .section-heading, .methods-card { grid-template-columns: 1fr; display: grid; }
+        .hero { grid-template-columns: minmax(0, 1fr); gap: 34px; padding-top: 56px; }
+        .steps, .code-grid, .info-grid { grid-template-columns: minmax(0, 1fr); }
+        .section-heading, .methods-card { grid-template-columns: minmax(0, 1fr); display: grid; }
+        .footer-top { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-top: 34px; }
       }
-      @media (max-width: 500px) {
-        .nav { padding: 0 18px; } .network-pill { display: none; }
-        main, .footer { width: min(100% - 32px, 1160px); }
+      @media (max-width: 560px) {
+        :root { --gutter: 18px; }
+        .network-pill { display: none; }
         .hero { padding-top: 40px; } h1 { font-size: 2.75rem; }
         .endpoint-row { align-items: stretch; flex-direction: column; } .copy-button { min-height: 34px; }
+        .footer-bottom { justify-content: flex-start; }
+      }
+      @media (max-width: 380px) {
+        .brand-title { font-size: 0.95rem; }
+        /* Keep the two link columns wide enough for their longest label. */
+        .footer-nav { gap: 20px 16px; }
       }
     </style>
   </head>
   <body>
     <nav class="nav">
-      <a class="brand" href="/" aria-label="Neurai RPC home">
-        <span class="brand-mark">N</span>
-        <span><small>NEURAI</small><span class="brand-title">RPC Gateway</span></span>
-      </a>
-      <div class="nav-actions">
-        <span class="network-pill"><i class="status-dot"></i><span data-setting="environment">Loading network…</span></span>
-        <button class="theme-toggle" type="button" id="themeToggle" aria-label="Toggle colour theme">◐</button>
+      <div class="shell nav-inner">
+        <a class="brand" href="/" aria-label="Neurai RPC home">
+          <img class="brand-mark" src="./neurai-logo.svg" alt="" width="34" height="34" />
+          <span><small>NEURAI</small><span class="brand-title">RPC Gateway</span></span>
+        </a>
+        <div class="nav-actions">
+          <span class="network-pill"><i class="status-dot"></i><span data-setting="environment">Loading network…</span></span>
+          <button class="theme-toggle" type="button" id="themeToggle" aria-label="Toggle colour theme">◐</button>
+        </div>
       </div>
     </nav>
 
-    <main>
+    <main class="shell">
       <section class="hero">
         <div>
           <p class="eyebrow">OPEN BLOCKCHAIN ACCESS</p>
@@ -202,7 +240,7 @@
         </div>
       </section>
 
-      <section class="section">
+      <section class="section" id="examples">
         <div class="section-heading">
           <div><p class="eyebrow">REQUEST EXAMPLES</p><h2>Call the node from anywhere</h2></div>
           <p>Replace nothing: both examples use the endpoint configured for this deployment.</p>
@@ -259,7 +297,40 @@
     </main>
 
     <footer class="footer">
-      <span data-setting="heading">Neurai RPC Proxy</span> · Built for the Neurai ecosystem · <a href="https://github.com/NeuraiProject/neurai-rpc-proxy" target="_blank" rel="noreferrer">Open source on GitHub</a>
+      <div class="shell">
+        <div class="footer-top">
+          <div class="footer-brand">
+            <img class="footer-logo" src="./neurai-logo.svg" alt="" width="40" height="40" />
+            <div>
+              <span class="footer-name" data-setting="heading">Neurai RPC Proxy</span>
+              <p class="footer-tagline">A safe, public HTTP gateway to the Neurai blockchain. Whitelisted JSON-RPC methods, queued and cached for the lifetime of the current block.</p>
+            </div>
+          </div>
+          <nav class="footer-nav" aria-label="Footer">
+            <div>
+              <h3>Gateway</h3>
+              <ul>
+                <li><a href="#quickstart">Quick start</a></li>
+                <li><a href="#examples">Request examples</a></li>
+                <li><a href="#methods">Method explorer</a></li>
+                <li><a href="/statistics/">Statistics</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3>Project</h3>
+              <ul>
+                <li><a href="https://github.com/NeuraiProject/neurai-rpc-proxy" target="_blank" rel="noreferrer">Source on GitHub</a></li>
+                <li><a href="https://neurai.org" target="_blank" rel="noreferrer">neurai.org</a></li>
+                <li><a href="/whitelist">Whitelist (JSON)</a></li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+        <div class="footer-bottom">
+          <span>© <span id="year">2026</span> Neurai Project · MIT licensed</span>
+          <span class="footer-net"><i class="status-dot"></i>Network <b data-setting="environment">—</b></span>
+        </div>
+      </div>
     </footer>
     <script src="./index.js"></script>
   </body>

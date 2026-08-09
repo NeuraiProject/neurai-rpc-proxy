@@ -97,6 +97,9 @@ document.querySelectorAll("[data-copy-target]").forEach((button) => {
   button.addEventListener("click", () => copyElement(button.dataset.copyTarget, button));
 });
 
+const yearElement = document.getElementById("year");
+if (yearElement) yearElement.textContent = String(new Date().getFullYear());
+
 const themeToggle = document.getElementById("themeToggle");
 const preferredTheme = localStorage.getItem("neurai-rpc-theme") || "light";
 document.documentElement.dataset.theme = preferredTheme;
