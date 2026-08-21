@@ -18,7 +18,7 @@ Check out this software live at:
 - **DePIN Testnet support** - The proxy reaches the whitelisted `depin*` methods through the standard node RPC. DePIN protocol 2 authenticates holders with signed challenges and answers encrypted, pool-key-signed replies, so the proxy never needs to be trusted with anything
 - **Smart Caching** - Cache responses based on block height to reduce node load
 - **Queue Management** - Control concurrent requests to your Neurai node
-- **Whitelist Protection** - Only allow an explicitly approved set of methods. Mostly reads, plus a few writes that carry their own proof (`sendrawtransaction`, `depinsubmitmsg`); anything needing the node's wallet or private keys stays out
+- **Whitelist Protection** - Only allow an explicitly approved set of methods. Mostly reads, plus a few writes that carry their own proof (`sendrawtransaction`, `depinsubmitmsg`, `depinclearmsg`); anything needing the node's wallet or private keys stays out
 - **Multi-Node Support** - Automatic failover between multiple Neurai nodes
 
 ## DePIN
@@ -50,6 +50,13 @@ funds. The token owner's signature over the pool key goes in `.env` as
 `neurai-cli depinpoolpkey`, sign `DEPIN-POOLKEY|<token>|<pubkey>` with `signmessage`
 from the owner address, set the variable, restart). The node refuses to start the
 service without it, and the entrypoint refuses earlier, with the reason.
+
+**Upgrading from 1.1.x:** `depingetpoolcontent` is gone (the node no longer has it;
+pool-wide metadata has no identity to bind a challenge to), and `depinreceivemsg`,
+`depinlistsections` and `depinclearmsg` now require the challenge/signature pair
+described above. The per-node `depin_enabled` / `depin_url` keys in `config.json` are
+obsolete: the proxy logs a notice and ignores them. In Docker, a testnet `.env` from
+1.1.x needs the new `DEPIN_POOLKEYSIG` value or the node will refuse to start.
 
 
 ## How do I use this software?
@@ -140,6 +147,7 @@ Configure your setup in ./config.json
 - `environment` - Environment name (displayed in UI)
 - `local_port` - Port for the proxy server
 - `nodes` - Array of Neurai nodes for failover
+  (`depin_enabled` / `depin_url` from 1.1.x are obsolete and ignored — DePIN goes through `neurai_url`)
 
 ### How should my Neurai node be configured?
 
@@ -341,6 +349,30 @@ estimatesmartfee conf_target ("estimate_mode")
 signmessagewithprivkey "privkey" "message"
 validateaddress "address"
 verifymessage "address" "signature" "message"
+
+== Depin asset ==
+checkdepinvalidity
+depingetancestorrecipients
+freezedepin
+getpubkey
+listdepinaddresses
+listdepinholders
+selfrevokedepin
+unfreezedepin
+
+== Depin messaging (protocol 2, DePIN-Test branch only) ==
+depinchallenge
+depinclearmsg
+depingetmsg
+depingetmsginfo
+depinlistsections
+depinmcpstatus
+depinpoolpkey
+depinpoolstats
+depinreceivemsg
+depinsendmsg
+depinsignchallenge
+depinsubmitmsg
 
 == Wallet ==
 abandontransaction "txid"
