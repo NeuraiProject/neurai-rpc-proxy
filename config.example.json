@@ -1,5 +1,8 @@
 {
   "concurrency": 4,
+  "depin_rate_limit": 60,
+  "depin_ban_minutes": 60,
+  "trust_proxy": false,
   "endpoint": "https://rpc-main.neurai.org/rpc",
   "environment": "Neurai Mainnet",
   "local_port": 19999,

@@ -35,28 +35,34 @@ only; there is no separate gateway port any more.
 Protocol 2 in one paragraph: a holder asks `depinchallenge` for a single-use nonce
 (the reply is encrypted for the holder's on-chain public key), signs it with its own
 key, and passes nonce + signature to `depinreceivemsg`, `depinlistsections` or
-`depinclearmsg`. Every reply carries `poolsig`, the node's pool-key signature, and the
-pool key itself is vouched for by the token owner (`depingetmsginfo.depinpoolkeysig`).
-A client anchors that pool key out of band (its own node, configuration, or first-use
-pinning) and verifies the owner signature locally — never by asking this proxy, which
-is exactly the party the scheme is designed not to trust. Publishing goes through
-`depinsubmitmsg` with the serialized message wrapped in an ECIES envelope for the pool
-key. See `doc/depinreceivemsg.md` in the node repository for the full contract.
+`depinclearmsg`. Every authenticated reply carries the next nonce inside its
+encrypted body, so a client that keeps reading calls `depinchallenge` once. Every
+reply carries `poolsig`, the node's pool-key signature; the client pins
+`depingetmsginfo.depinpoolpkey` on first use and verifies `poolsig` locally from then
+on — never by asking this proxy, which is exactly the party the scheme is designed
+not to trust. Publishing goes through `depinsubmitmsg` with the serialized message
+wrapped in an ECIES envelope for the pool key. Message content is encrypted per
+recipient and never readable by the node or the proxy. See `doc/depinreceivemsg.md`
+in the node repository for the full contract.
 
 The testnet node therefore runs **with a wallet** (`NEURAI_DISABLE_WALLET=0`): the pool
 key is derived from a dedicated, unencrypted, legacy BIP44 wallet that must never hold
-funds. The token owner's signature over the pool key goes in `.env` as
-`DEPIN_POOLKEYSIG` (bootstrap: start once with `NEURAI_DEPIN_ENABLED=0`, run
-`neurai-cli depinpoolpkey`, sign `DEPIN-POOLKEY|<token>|<pubkey>` with `signmessage`
-from the owner address, set the variable, restart). The node refuses to start the
-service without it, and the entrypoint refuses earlier, with the reason.
+funds. No other bootstrap is needed: the node refuses to start the service without
+such a wallet, and the entrypoint refuses earlier, with the reason.
+
+Abuse control is split: the node limits challenges issued and messages accepted per
+**address** and minute (`depinratelimit`, `NEURAI_DEPIN_RATE_LIMIT`), and this proxy
+limits `depin*` requests per **origin IP** and minute (`depin_rate_limit`, default 60)
+and blocks the IP for `depin_ban_minutes` (default 60) when it goes over, answering
+`429` with `Retry-After`. The node cannot see origin IPs behind the proxy, which is
+why the split exists. Set `trust_proxy` only when a trusted reverse proxy in front
+sets `X-Forwarded-For`; otherwise clients could choose their own identity.
 
 **Upgrading from 1.1.x:** `depingetpoolcontent` is gone (the node no longer has it;
 pool-wide metadata has no identity to bind a challenge to), and `depinreceivemsg`,
 `depinlistsections` and `depinclearmsg` now require the challenge/signature pair
 described above. The per-node `depin_enabled` / `depin_url` keys in `config.json` are
-obsolete: the proxy logs a notice and ignores them. In Docker, a testnet `.env` from
-1.1.x needs the new `DEPIN_POOLKEYSIG` value or the node will refuse to start.
+obsolete: the proxy logs a notice and ignores them.
 
 
 ## How do I use this software?
@@ -148,6 +154,9 @@ Configure your setup in ./config.json
 - `local_port` - Port for the proxy server
 - `nodes` - Array of Neurai nodes for failover
   (`depin_enabled` / `depin_url` from 1.1.x are obsolete and ignored — DePIN goes through `neurai_url`)
+- `depin_rate_limit` - `depin*` requests allowed per origin IP and minute (default 60, 0 disables)
+- `depin_ban_minutes` - How long an IP that exceeded the limit is blocked (default 60)
+- `trust_proxy` - Express `trust proxy` setting; enable only behind a trusted reverse proxy that sets `X-Forwarded-For`
 
 ### How should my Neurai node be configured?
 
@@ -181,9 +190,9 @@ rpcallowip=127.0.0.1
 dbcache=4096
 ```
 
-For the testnet `DePIN-Test` branch, set `depinmsg=1`, `depinmsgtoken` and
-`depinpoolkeysig`, and keep the wallet enabled (the compose file does this through
-environment variables). There is no DePIN port: the service is served on the RPC port
+For the testnet `DePIN-Test` branch, set `depinmsg=1` and `depinmsgtoken`, keep the
+wallet enabled, and optionally tune `depinratelimit` (the compose file does this
+through environment variables). There is no DePIN port: the service is served on the RPC port
 the proxy already talks to. The stable `v1.0.5` mainnet node does not accept these
 options.
 

@@ -8,6 +8,7 @@ const cors = require("cors");
 const express = require("express");
 const getConfig = require("./getConfig");
 const { whitelist, isWhitelisted } = require("./whitelist");
+const { createDepinLimiter } = require("./depinRateLimit");
 
 let numberOfRequests = 0;
 
@@ -52,6 +53,21 @@ app.use(express.json({ limit: "2mb" }));
 
 const config = getConfig();
 
+// Behind another reverse proxy (nginx, a load balancer) the client IP is in
+// X-Forwarded-For; only honour it when the operator says so, otherwise any
+// client could pick its own identity for the rate limiter.
+if (config.trust_proxy) {
+  app.set("trust proxy", config.trust_proxy);
+}
+
+// Per-IP limit and temporary ban for the depin* methods. The node limits per
+// authenticated address; the origin IP only exists here.
+const depinLimiter = createDepinLimiter({
+  perMinute: config.depin_rate_limit === undefined ? 60 : Number(config.depin_rate_limit),
+  banMinutes: config.depin_ban_minutes === undefined ? 60 : Number(config.depin_ban_minutes),
+});
+setInterval(() => depinLimiter.prune(Date.now()), 60 * 1000).unref();
+
 //Default to concurrency 1
 const queue = new PQueue({ concurrency: config.concurrency || 1 });
 
@@ -80,6 +96,7 @@ app.get("/getCache", (_, res) => {
   obj.numberOfRequests = numberOfRequests.toLocaleString();
   obj.methods = cacheService.getMethods();
   obj.nodes = getNodes();
+  obj.depinRateLimit = depinLimiter.stats();
   return res.send(obj);
 });
 app.get("/settings", (req, res) => {
@@ -227,6 +244,27 @@ app.post("/rpc", async (req, res) => {
         error: "Not in whitelist",
         description: "Method " + method + " is not supported",
       });
+    }
+
+    // DePIN abuse control by origin IP: over the limit, the IP is blocked for
+    // a while and every depin* call answers 429 until it lapses.
+    if (typeof method === "string" && method.startsWith("depin")) {
+      const verdict = depinLimiter.check(req.ip, Date.now());
+      if (!verdict.allowed) {
+        if (verdict.justBanned) {
+          console.log("DePIN rate limit exceeded, banning", req.ip, "for", depinLimiter.stats().banMinutes, "minutes");
+        }
+        res.set("Retry-After", String(verdict.retryAfterSeconds));
+        return res.status(429).send({
+          error: "Too many requests",
+          description:
+            "DePIN requests from this address are blocked for " +
+            verdict.retryAfterSeconds +
+            " seconds (limit: " +
+            depinLimiter.stats().perMinute +
+            " depin* requests per minute)",
+        });
+      }
     }
     //Special case for listaddressesforassets
     //Seems to be a bug with listaddressesforassets with second param totalCount set to true

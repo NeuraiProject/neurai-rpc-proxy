@@ -174,7 +174,7 @@ const whitelist = [
   "depinclearmsg",     // owner-level, challenge-authenticated
   "depinreceivemsg",
   "depinlistsections",
-  "depingetmsginfo",   // publishes the pool key and the owner's signature over it
+  "depingetmsginfo",   // publishes the pool key (clients pin it on first use)
   "depinmcpstatus",
   "depinpoolstats",
   "depinsubmitmsg",    // Write, but non-custodial: the client encrypts, signs and wraps for the pool key

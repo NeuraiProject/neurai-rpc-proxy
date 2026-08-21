@@ -34,6 +34,9 @@ else
   cat > "$CONFIG_FILE" <<EOF
 {
   "concurrency": ${PROXY_CONCURRENCY:-4},
+  "depin_rate_limit": ${PROXY_DEPIN_RATE_LIMIT:-60},
+  "depin_ban_minutes": ${PROXY_DEPIN_BAN_MINUTES:-60},
+  "trust_proxy": ${PROXY_TRUST_PROXY:-false},
   "endpoint": "${PROXY_ENDPOINT:-}",
   "environment": "${PROXY_ENVIRONMENT:-Neurai}",
   "heading": "${PROXY_HEADING:-Neurai RPC Proxy}",
