@@ -9,7 +9,7 @@ for (const node of config.nodes) {
   const rpc = NeuraiRPC.getRPC(node.username, node.password, node.neurai_url);
   allNodes.push({ name: node.name, rpc, neuraiUrl: node.neurai_url });
 
-  // depin_enabled/depin_url used to point at the DePIN gateway (TCP 19002). The
+  // depin_enabled/depin_url used to point at a DePIN gateway port that no longer exists. The
   // proxy no longer talks to it: every depin* command is a regular RPC on the
   // node URL above. Warn instead of failing so old config.json files still boot.
   if (node.depin_enabled !== undefined || node.depin_url !== undefined) {

@@ -89,6 +89,6 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 VOLUME ["/data"]
 
-EXPOSE 19002 19100 19101 28332
+EXPOSE 19100 19101 28332
 
 ENTRYPOINT ["entrypoint.sh"]

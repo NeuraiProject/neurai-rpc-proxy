@@ -183,9 +183,10 @@ function shouldCache(method) {
     // NOTHING here is cacheable. The cache is invalidated on a new best block
     // hash, but the message pool does not follow blocks: a message that lands in
     // the pool would stay invisible until the next block.
+    //  "depinchallenge",      // single-use nonce: caching it would hand the same
+    //                         // challenge to every caller
     //  "depinclearmsg",
-    //  "depingetmsginfo",     // messages, memoryusage, oldest/newestmessage
-    //  "depingetpoolcontent", // pool contents
+    //  "depingetmsginfo",     // messages, memoryusage, newestmessage
     //  "depinmcpstatus",      // commands_processed, tasks_in_flight, last_poll_time
     //  "depinpoolstats",      // pool statistics
     //  "depinreceivemsg",     // pool contents

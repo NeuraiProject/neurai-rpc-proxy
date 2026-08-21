@@ -165,24 +165,32 @@ const whitelist = [
   //"selfrevokedepin",
   //"unfreezedepin",
 
-  //== Depin messaging ==
-  //"depinclearmsg",
+  //== Depin messaging (protocol 2) ==
+  // Reads and purges are authenticated by a challenge the holder signs with
+  // its own key (depinchallenge); replies are encrypted for the holder and
+  // signed with the node's pool key. Nothing here needs node credentials
+  // beyond the proxy's, and nothing here is cacheable.
+  "depinchallenge",
+  "depinclearmsg",     // owner-level, challenge-authenticated
   "depinreceivemsg",
   "depinlistsections",
-  "depingetmsginfo",
-  "depingetpoolcontent",
+  "depingetmsginfo",   // publishes the pool key and the owner's signature over it
   "depinmcpstatus",
   "depinpoolstats",
-  "depinsubmitmsg", //Write, but non-custodial: the client encrypts and signs
+  "depinsubmitmsg",    // Write, but non-custodial: the client encrypts, signs and wraps for the pool key
+  // depingetpoolcontent no longer exists in the node (pool-wide metadata with
+  // no identity to bind a challenge to).
 
-  //== Depin — requires a wallet in the node, so unusable with disablewallet=1 ==
-  // Re-enable individually if this proxy ever fronts a node with a wallet.
-  // depinpoolpkey is the first one worth restoring: without it depinreceivemsg
-  // has no privacy layer.
-  //"depingetmsg",       // decrypts with the node's wallet keys
-  //"depinsendmsg",      // fromaddress must be a wallet address (signs+encrypts)
-  //"depinpoolpkey",     // needs the wallet loaded and unlocked at startup
-  //"listpqaddresses",   // lists PQ addresses *in the wallet*
+  //== Depin — the node's OWN wallet; never exposed even though the node has one ==
+  // A protocol-2 service node runs a dedicated legacy wallet for its pool key,
+  // so these methods exist upstream. They use the node's keys, not the
+  // holder's: keep them out. The pool public key is published by
+  // depingetmsginfo, so depinpoolpkey is not needed here either.
+  //"depingetmsg",        // decrypts with the node's wallet keys
+  //"depinsendmsg",       // fromaddress must be a wallet address (signs+encrypts)
+  //"depinsignchallenge", // signs a challenge with the node's wallet keys
+  //"depinpoolpkey",      // operator bootstrap: derives the pool key from the service wallet
+  //"listpqaddresses",    // lists PQ addresses *in the wallet*
 
   //== Wallet ==
   /*

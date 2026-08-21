@@ -15,8 +15,8 @@
 #   PROXY_CONFIG_FORCE    0                          1 = regenerate even if a
 #                                                    config.json is already present
 #
-# NEURAI_DEPIN_ENABLED/NEURAI_DEPIN_URL are gone: the proxy no longer connects to
-# the DePIN gateway (raw TCP, port 19002). Every depin* command is a regular RPC
+# NEURAI_DEPIN_ENABLED/NEURAI_DEPIN_URL are gone: there is no DePIN gateway any
+# more (the node serves DePIN on its RPC port only). Every depin* command is a regular RPC
 # on NEURAI_NODE_URL and goes through the whitelist like any other method.
 set -eu
 

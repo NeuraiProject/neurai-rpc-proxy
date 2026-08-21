@@ -15,8 +15,9 @@ three decisions that are easy to regress:
 
 describe("whitelist: DePIN methods that work without a wallet", () => {
   const exposed = [
+    "depinchallenge",
+    "depinclearmsg",
     "depingetmsginfo",
-    "depingetpoolcontent",
     "depinpoolstats",
     "depinmcpstatus",
     "depinreceivemsg",
@@ -38,8 +39,10 @@ describe("whitelist: DePIN methods that need the node's wallet", () => {
   const rejected = [
     ["depingetmsg", "decrypts with the node's wallet keys"],
     ["depinsendmsg", "signs with a wallet address"],
-    ["depinpoolpkey", "needs the wallet loaded and unlocked"],
+    ["depinsignchallenge", "signs a challenge with the node's wallet keys"],
+    ["depinpoolpkey", "operator bootstrap of the service wallet"],
     ["listpqaddresses", "lists PQ addresses in the wallet"],
+    ["depingetpoolcontent", "removed from the node: pool-wide metadata"],
   ];
 
   test.each(rejected)("%s is NOT whitelisted (%s)", (method) => {
@@ -58,8 +61,9 @@ describe("cache: nothing derived from the message pool is cached", () => {
   // independently of blocks — a cached entry would hide new messages until the
   // next block.
   const poolMethods = [
+    "depinchallenge",
+    "depinclearmsg",
     "depingetmsginfo",
-    "depingetpoolcontent",
     "depinpoolstats",
     "depinmcpstatus",
     "depinreceivemsg",
@@ -71,9 +75,10 @@ describe("cache: nothing derived from the message pool is cached", () => {
   });
 
   test("depinlistsections is NOT cached: shouldCache cannot see the address argument", () => {
-    // Without an address it is a per-tip view, but with one it returns per-section
-    // message counts. shouldCache() only receives the method name, so the safe
-    // answer for both shapes is false.
+    // Without an address it is a per-tip view, but with the four-argument form
+    // it returns per-section message counts encrypted for one address.
+    // shouldCache() only receives the method name, so the safe answer for both
+    // shapes is false.
     expect(cacheService.shouldCache("depinlistsections")).toBe(false);
   });
 });

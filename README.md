@@ -15,7 +15,7 @@ Check out this software live at:
 ## Features
 
 - **Standard RPC Proxy** (`/rpc`) - Expose standard Neurai RPC calls with caching
-- **DePIN Testnet support** - The proxy reaches enabled `depin*` methods through the standard node RPC; it never proxies the node's separate gateway port
+- **DePIN Testnet support** - The proxy reaches the whitelisted `depin*` methods through the standard node RPC. DePIN protocol 2 authenticates holders with signed challenges and answers encrypted, pool-key-signed replies, so the proxy never needs to be trusted with anything
 - **Smart Caching** - Cache responses based on block height to reduce node load
 - **Queue Management** - Control concurrent requests to your Neurai node
 - **Whitelist Protection** - Only allow an explicitly approved set of methods. Mostly reads, plus a few writes that carry their own proof (`sendrawtransaction`, `depinsubmitmsg`); anything needing the node's wallet or private keys stays out
@@ -29,10 +29,27 @@ the node's standard HTTP RPC endpoint; enabled `depin*` methods are sent through
 
 The Docker deployments intentionally differ: mainnet uses the stable `v1.0.5` node,
 which has no DePIN messaging implementation, while testnet builds the `DePIN-Test`
-branch and enables it. That branch has an additional, direct TCP gateway whose
-upstream default is port `19002`. It is neither published by the testnet compose file
-nor used by this proxy. Leave `NEURAI_DEPIN_PORT` unset unless a direct gateway client
-needs a non-default port.
+branch and enables it. That branch serves DePIN **protocol 2** on the node's RPC port
+only; there is no separate gateway port any more.
+
+Protocol 2 in one paragraph: a holder asks `depinchallenge` for a single-use nonce
+(the reply is encrypted for the holder's on-chain public key), signs it with its own
+key, and passes nonce + signature to `depinreceivemsg`, `depinlistsections` or
+`depinclearmsg`. Every reply carries `poolsig`, the node's pool-key signature, and the
+pool key itself is vouched for by the token owner (`depingetmsginfo.depinpoolkeysig`).
+A client anchors that pool key out of band (its own node, configuration, or first-use
+pinning) and verifies the owner signature locally — never by asking this proxy, which
+is exactly the party the scheme is designed not to trust. Publishing goes through
+`depinsubmitmsg` with the serialized message wrapped in an ECIES envelope for the pool
+key. See `doc/depinreceivemsg.md` in the node repository for the full contract.
+
+The testnet node therefore runs **with a wallet** (`NEURAI_DISABLE_WALLET=0`): the pool
+key is derived from a dedicated, unencrypted, legacy BIP44 wallet that must never hold
+funds. The token owner's signature over the pool key goes in `.env` as
+`DEPIN_POOLKEYSIG` (bootstrap: start once with `NEURAI_DEPIN_ENABLED=0`, run
+`neurai-cli depinpoolpkey`, sign `DEPIN-POOLKEY|<token>|<pubkey>` with `signmessage`
+from the owner address, set the variable, restart). The node refuses to start the
+service without it, and the entrypoint refuses earlier, with the reason.
 
 
 ## How do I use this software?
@@ -156,10 +173,11 @@ rpcallowip=127.0.0.1
 dbcache=4096
 ```
 
-For the testnet `DePIN-Test` branch, set `depinmsg=1` and `depinmsgtoken` (the
-compose file does this through environment variables). `depinmsgport` is optional and
-defaults to `19002`; it is a direct node gateway, not the proxy's HTTP RPC port.
-The stable `v1.0.5` mainnet node does not accept these options.
+For the testnet `DePIN-Test` branch, set `depinmsg=1`, `depinmsgtoken` and
+`depinpoolkeysig`, and keep the wallet enabled (the compose file does this through
+environment variables). There is no DePIN port: the service is served on the RPC port
+the proxy already talks to. The stable `v1.0.5` mainnet node does not accept these
+options.
 
 ## Sir, how do I start this application?
 

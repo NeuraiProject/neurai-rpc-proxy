@@ -44,26 +44,43 @@ EOF
 fi
 
 if [ "${NEURAI_DEPIN_ENABLED:-0}" = "1" ]; then
+  # Protocol 2 (DePIN-Test branch): the service is served on the node's RPC
+  # port only, its pool key comes from the node's wallet, and the token owner
+  # must have vouched for that key. Fail here, with the reason, rather than let
+  # neuraid InitError in a restart loop.
   if [ -z "${NEURAI_DEPIN_TOKEN:-}" ]; then
-    echo "[entrypoint] WARNING: NEURAI_DEPIN_ENABLED=1 but NEURAI_DEPIN_TOKEN is empty — set a messaging token." >&2
+    echo "[entrypoint] ERROR: NEURAI_DEPIN_ENABLED=1 but NEURAI_DEPIN_TOKEN is empty - set a messaging token." >&2
+    exit 1
+  fi
+  if [ "${NEURAI_DISABLE_WALLET:-1}" = "1" ]; then
+    echo "[entrypoint] ERROR: NEURAI_DEPIN_ENABLED=1 requires NEURAI_DISABLE_WALLET=0: the pool key is derived from the node's (dedicated, unencrypted, legacy BIP44) wallet." >&2
+    exit 1
+  fi
+  if [ -z "${NEURAI_DEPIN_POOLKEYSIG:-}" ]; then
+    echo "[entrypoint] ERROR: NEURAI_DEPIN_ENABLED=1 requires NEURAI_DEPIN_POOLKEYSIG: start once with NEURAI_DEPIN_ENABLED=0, run 'neurai-cli depinpoolpkey', have the token owner signmessage \"DEPIN-POOLKEY|<token>|<pubkey>\", then set the signature." >&2
+    exit 1
   fi
   cat >> "$DATA_DIR/neurai.conf" <<EOF
 
-# Supported only by the DePIN-Test node branch.
-# The gateway is separate from the HTTP RPC server; its upstream default is
-# 19002 and the rpc-proxy never connects to it.
+# Supported only by the DePIN-Test node branch (DePIN protocol 2).
+# Served over the RPC port above; there is no separate DePIN listener.
 depinmsg=1
-depinmsgtoken=${NEURAI_DEPIN_TOKEN:-}
-depinmsgport=${NEURAI_DEPIN_PORT:-19002}
+depinmsgtoken=${NEURAI_DEPIN_TOKEN}
+depinpoolkeysig=${NEURAI_DEPIN_POOLKEYSIG}
 depinmsgsize=${NEURAI_DEPIN_MAX_MESSAGE_SIZE:-1024}
 depinmsgexpire=${NEURAI_DEPIN_MESSAGE_EXPIRY:-168}
 depinpoolsize=${NEURAI_DEPIN_MAX_POOL_SIZE:-100}
 EOF
+  if [ -n "${NEURAI_DEPIN_WALLET:-}" ]; then
+    echo "depinwallet=${NEURAI_DEPIN_WALLET}" >> "$DATA_DIR/neurai.conf"
+  fi
 fi
 
 cat >> "$DATA_DIR/neurai.conf" <<EOF
 
-# Wallet — disabled by default, set NEURAI_DISABLE_WALLET=0 to enable
+# Wallet — disabled by default, set NEURAI_DISABLE_WALLET=0 to enable.
+# A DePIN service node needs one (dedicated, unencrypted, legacy BIP44, no
+# funds): it is where the pool key comes from.
 disablewallet=${NEURAI_DISABLE_WALLET:-1}
 
 # Log — shrink debug.log automatically when it grows too large
