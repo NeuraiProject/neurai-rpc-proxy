@@ -257,28 +257,48 @@
         </div>
       </section>
 
-      <section class="section">
+      <section class="section" id="depin">
         <div class="section-heading">
-          <div><p class="eyebrow">DEPIN ON TESTNET</p><h2>Use DePIN through the same RPC</h2></div>
-          <p>There is no proxy-specific DePIN URL. If the configured testnet node enables the DePIN methods, call them through the endpoint above.</p>
+          <div><p class="eyebrow">DEPIN ON TESTNET</p><h2>DePIN messaging through the same RPC</h2></div>
+          <p>The DePIN methods are regular node RPCs: call them through the endpoint above with the same JSON shape. A pool is a DePIN token; its sub-assets are sections, and a holder reads its section and everything below it.</p>
         </div>
         <div class="info-grid">
           <article class="info-card depin">
-            <h3>DePIN RPC example</h3>
-            <p>Query the sections available to the DePIN message pool with the same POST JSON-RPC shape.</p>
-            <pre><code id="depinExample"></code></pre>
-            <p class="note"><strong>Note:</strong> <code>/depin</code> is retired and returns <code>410 Gone</code>. The proxy forwards whitelisted <code>depin*</code> methods via <code>/rpc</code>.</p>
+            <h3>Sections are sub-assets</h3>
+            <p>The node serves one pool root. Every sub-asset under it is a section; access is inherited downward, never upward.</p>
+            <pre><code>&amp;NEWS                 pool root   — holders read everything below
+&amp;NEWS/GENERAL         section     — holders read GENERAL and its children
+&amp;NEWS/GENERAL/SPORT   sub-section — holders read SPORT only</code></pre>
+            <p>Holdings are soulbound, on-chain data: <code>listdepinholders</code>, <code>checkdepinvalidity</code> and <code>getpubkey</code> let any client verify who takes part without trusting this proxy.</p>
           </article>
           <article class="info-card">
-            <h3>About the gateway port</h3>
-            <p>The <code>DePIN-Test</code> node can also run its own direct TCP messaging gateway. That is a node feature, not an HTTP endpoint provided by this proxy.</p>
+            <h3>Who holds what</h3>
             <ul>
-              <li>The proxy never connects to or publishes that TCP gateway.</li>
-              <li>For the testnet branch, its default is port <code>19002</code>.</li>
-              <li>Use it only for a client that explicitly implements its separate protocol.</li>
+              <li><b>The holder</b> keeps its own key: it signs requests, decrypts replies and encrypts messages locally. The node never sees it.</li>
+              <li><b>The node</b> signs every reply with its pool key (<code>poolsig</code>). Pin <code>depinpoolpkey</code> from <code>depingetmsginfo</code> on first use and verify replies against it.</li>
+              <li><b>This proxy</b> only whitelists and rate-limits <code>depin*</code> calls per origin IP. It never sees a private key or a plaintext message.</li>
             </ul>
           </article>
         </div>
+        <div class="code-grid" style="margin-top: 18px;">
+          <article class="code-card">
+            <div class="code-top"><h3>1 · Discover the pool and its sections</h3><button class="copy-code" type="button" data-copy-target="depinDiscover">Copy</button></div>
+            <pre><code id="depinDiscover"></code></pre>
+          </article>
+          <article class="code-card">
+            <div class="code-top"><h3>2 · Authenticate for a section</h3><button class="copy-code" type="button" data-copy-target="depinAuth">Copy</button></div>
+            <pre><code id="depinAuth"></code></pre>
+          </article>
+          <article class="code-card">
+            <div class="code-top"><h3>3 · Read a section and its children</h3><button class="copy-code" type="button" data-copy-target="depinRead">Copy</button></div>
+            <pre><code id="depinRead"></code></pre>
+          </article>
+          <article class="code-card">
+            <div class="code-top"><h3>4 · Publish to a sub-section</h3><button class="copy-code" type="button" data-copy-target="depinPublish">Copy</button></div>
+            <pre><code id="depinPublish"></code></pre>
+          </article>
+        </div>
+        <p class="note" style="margin-top: 14px;"><code>signMessage</code>, <code>decryptForAddress</code>, <code>buildDepinMessage</code> and <code>eciesEncrypt</code> are client-side cryptography (signmessage-compatible signatures, ECIES). A JavaScript implementation lives in <a href="https://github.com/NeuraiProject/DePIN-Messaging" target="_blank" rel="noreferrer">DePIN-Messaging</a>; the byte-exact contract is <code>doc/depin-messaging-protocol.md</code> in the node repository.</p>
       </section>
 
       <section class="section" id="methods">
@@ -312,6 +332,7 @@
               <ul>
                 <li><a href="#quickstart">Quick start</a></li>
                 <li><a href="#examples">Request examples</a></li>
+                <li><a href="#depin">DePIN messaging</a></li>
                 <li><a href="#methods">Method explorer</a></li>
                 <li><a href="/statistics/">Statistics</a></li>
               </ul>

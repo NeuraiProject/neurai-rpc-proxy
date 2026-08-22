@@ -2,12 +2,10 @@ const http = require("node:http");
 
 /*
 Integration tests: these drive the real Express app in index.js over HTTP against a
-fake Neurai node, so they cover the two behaviours unit tests cannot reach.
+fake Neurai node, so they cover behaviour unit tests cannot reach, above all that a
+JSON-RPC error arriving with HTTP 200 comes out as 500 on /rpc.
 
-  1. POST /depin answers 410 Gone (the endpoint was retired)
-  2. a JSON-RPC error arriving with HTTP 200 comes out as 500 on /rpc
-
-Point 2 is the behaviour change in @neuraiproject/neurai-rpc 0.5.0: getRPC used to
+That is the behaviour change in @neuraiproject/neurai-rpc 0.5.0: getRPC used to
 resolve undefined for those, silently swallowing the error, so the proxy answered
 200 {"result":null}. It must reject now.
 */
@@ -89,33 +87,6 @@ function post(path, body) {
     body: JSON.stringify(body),
   });
 }
-
-describe("POST /depin is retired", () => {
-  test("answers 410 Gone and points at /rpc", async () => {
-    const response = await post("/depin", {
-      address: "NXsomething",
-      signature: "base64",
-      method: "depingetmsg",
-      params: [],
-    });
-
-    expect(response.status).toBe(410);
-    const body = await response.json();
-    expect(body.error).toBe("Gone");
-    expect(body.description).toMatch(/POST \/rpc/);
-  });
-
-  test("GET /depin is 410 too, not 404", async () => {
-    const response = await fetch(`${proxyUrl}/depin`);
-    expect(response.status).toBe(410);
-  });
-
-  test("no request reached the node", async () => {
-    const before = fakeNodeRequests.length;
-    await post("/depin", { method: "depinpoolstats", params: [] });
-    expect(fakeNodeRequests.length).toBe(before);
-  });
-});
 
 describe("GET /settings", () => {
   test("does not expose a Docker-internal endpoint to browser clients", async () => {

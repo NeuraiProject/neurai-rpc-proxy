@@ -23,9 +23,17 @@ Check out this software live at:
 
 ## DePIN
 
-The `/depin` endpoint is retired and returns `410 Gone`. The proxy only connects to
-the node's standard HTTP RPC endpoint; enabled `depin*` methods are sent through
-`/rpc` like other whitelisted methods.
+The proxy only connects to the node's standard HTTP RPC endpoint; the whitelisted
+`depin*` methods go through `/rpc` like any other method. There is no DePIN-specific
+URL or port.
+
+**Sections are sub-assets.** The node serves one pool root (`&NEWS`); its sub-assets
+are sections (`&NEWS/GENERAL`, `&NEWS/GENERAL/SPORT`). Access is inherited downward,
+never upward: a holder of `&NEWS` reads everything, a holder of `&NEWS/GENERAL` reads
+that branch only. Holdings are soulbound, on-chain data, so any client can verify who
+takes part with `listdepinholders`, `checkdepinvalidity` and `getpubkey`. The proxy's
+web page walks through the sequence (discover → authenticate → read → publish) as
+`fetch` examples against the configured endpoint.
 
 The Docker deployments intentionally differ: mainnet uses the stable `v1.0.5` node,
 which has no DePIN messaging implementation, while testnet builds the `DePIN-Test`

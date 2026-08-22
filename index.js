@@ -311,24 +311,6 @@ app.post("/rpc", async (req, res) => {
   }
 });
 
-// The /depin endpoint has been retired. It fronted the DePIN messaging gateway
-// (raw TCP, port 19002) over HTTP, which never matched the gateway's protocol, and
-// its signature flow was unrealizable: the client had to supply a signature before
-// the single-use challenge it was meant to sign existed.
-//
-// Every depin* command is a regular node RPC served on the standard RPC port, so
-// they go through POST /rpc like any other method. To publish a message use
-// depinsubmitmsg with a payload already encrypted and signed by the client.
-app.all("/depin", (req, res) => {
-  res.status(410).send({
-    error: "Gone",
-    description:
-      "The /depin endpoint has been removed. DePIN commands are regular node RPCs: " +
-      "use POST /rpc. To send a message use depinsubmitmsg with a payload already " +
-      "encrypted and signed client-side.",
-  });
-});
-
 // Only listen when started as a program. Requiring this file (integration tests)
 // gives you the configured Express app without binding a port.
 if (require.main === module) {
