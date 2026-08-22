@@ -167,9 +167,10 @@ const whitelist = [
 
   //== Depin messaging (protocol 2) ==
   // Reads and purges are authenticated by a challenge the holder signs with
-  // its own key (depinchallenge); replies are encrypted for the holder and
-  // signed with the node's pool key. Nothing here needs node credentials
-  // beyond the proxy's, and nothing here is cacheable.
+  // its own key (depinchallenge, whose request is itself signed over a
+  // timestamp, single-use); replies are encrypted for the holder and signed
+  // with the node's pool key. Nothing here needs node credentials beyond the
+  // proxy's, and nothing here is cacheable.
   "depinchallenge",
   "depinclearmsg",     // owner-level, challenge-authenticated
   "depinreceivemsg",
@@ -188,7 +189,9 @@ const whitelist = [
   // depingetmsginfo, so depinpoolpkey is not needed here either.
   //"depingetmsg",        // decrypts with the node's wallet keys
   //"depinsendmsg",       // fromaddress must be a wallet address (signs+encrypts)
+  //"depinsignrequest",   // signs a challenge request with the node's wallet keys
   //"depinsignchallenge", // signs a challenge with the node's wallet keys
+  //"depindecrypt",       // opens an encrypted reply with the node's wallet keys
   //"depinpoolpkey",      // operator bootstrap: derives the pool key from the service wallet
   //"listpqaddresses",    // lists PQ addresses *in the wallet*
 

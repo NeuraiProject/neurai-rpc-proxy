@@ -32,10 +32,11 @@ which has no DePIN messaging implementation, while testnet builds the `DePIN-Tes
 branch and enables it. That branch serves DePIN **protocol 2** on the node's RPC port
 only; there is no separate gateway port any more.
 
-Protocol 2 in one paragraph: a holder asks `depinchallenge` for a single-use nonce
-(the reply is encrypted for the holder's on-chain public key), signs it with its own
-key, and passes nonce + signature to `depinreceivemsg`, `depinlistsections` or
-`depinclearmsg`. Every authenticated reply carries the next nonce inside its
+Protocol 2 in one paragraph: a holder signs a timestamped request with its own key
+and asks `depinchallenge` for a single-use nonce (the request is accepted once and
+only near the node's clock; the reply is encrypted for the holder's on-chain public
+key), signs the nonce, and passes nonce + signature to `depinreceivemsg`,
+`depinlistsections` or `depinclearmsg`. Every authenticated reply carries the next nonce inside its
 encrypted body, so a client that keeps reading calls `depinchallenge` once. Every
 reply carries `poolsig`, the node's pool-key signature; the client pins
 `depingetmsginfo.depinpoolpkey` on first use and verifies `poolsig` locally from then
@@ -51,7 +52,9 @@ funds. No other bootstrap is needed: the node refuses to start the service witho
 such a wallet, and the entrypoint refuses earlier, with the reason.
 
 Abuse control is split: the node limits challenges issued and messages accepted per
-**address** and minute (`depinratelimit`, `NEURAI_DEPIN_RATE_LIMIT`), and this proxy
+**address** and minute (`depinratelimit`, `NEURAI_DEPIN_RATE_LIMIT`), counting only
+requests signed by that address — a forged request is refused before it touches
+anyone's quota — and this proxy
 limits `depin*` requests per **origin IP** and minute (`depin_rate_limit`, default 60)
 and blocks the IP for `depin_ban_minutes` (default 60) when it goes over, answering
 `429` with `Retry-After`. The node cannot see origin IPs behind the proxy, which is
@@ -381,6 +384,8 @@ depinpoolstats
 depinreceivemsg
 depinsendmsg
 depinsignchallenge
+depinsignrequest
+depindecrypt
 depinsubmitmsg
 
 == Wallet ==

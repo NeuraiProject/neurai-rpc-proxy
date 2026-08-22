@@ -39,7 +39,9 @@ describe("whitelist: DePIN methods that need the node's wallet", () => {
   const rejected = [
     ["depingetmsg", "decrypts with the node's wallet keys"],
     ["depinsendmsg", "signs with a wallet address"],
+    ["depinsignrequest", "signs a challenge request with the node's wallet keys"],
     ["depinsignchallenge", "signs a challenge with the node's wallet keys"],
+    ["depindecrypt", "opens an encrypted reply with the node's wallet keys"],
     ["depinpoolpkey", "operator bootstrap of the service wallet"],
     ["listpqaddresses", "lists PQ addresses in the wallet"],
     ["depingetpoolcontent", "removed from the node: pool-wide metadata"],
