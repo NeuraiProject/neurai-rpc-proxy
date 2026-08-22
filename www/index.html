@@ -148,6 +148,34 @@
       .note { margin-top: 12px !important; font-size: 0.78rem !important; }
       .note strong { color: var(--text); }
 
+      /* DePIN: the model explained once, with one diagram and one request. */
+      .depin-model { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 18px; }
+      .depin-model > * { min-width: 0; }
+      .depin-figure { padding: 18px 18px 14px; }
+      .depin-figure svg { display: block; width: 100%; height: auto; font-family: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .depin-legend { display: grid; gap: 7px; margin: 12px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.78rem; }
+      .depin-legend li { display: inline-flex; align-items: center; gap: 7px; }
+      .depin-legend i { flex: none; width: 14px; height: 10px; border-radius: 3px; border: 1px solid var(--orange); }
+      .depin-legend .scope-root { background: color-mix(in srgb, var(--orange) 8%, transparent); }
+      .depin-legend .scope-branch { background: color-mix(in srgb, var(--orange) 22%, transparent); }
+      .depin-legend .scope-leaf { background: color-mix(in srgb, var(--orange) 48%, transparent); }
+      .depin-facts { display: grid; gap: 0; padding: 6px 22px; }
+      .depin-facts > div { padding: 16px 0; }
+      .depin-facts > div + div { border-top: 1px solid var(--line); }
+      .depin-facts h3 { margin: 0 0 5px; font-size: 0.95rem; letter-spacing: -0.02em; }
+      .depin-facts p { margin: 0; color: var(--muted); font-size: 0.85rem; }
+      .depin-facts code, .step code.method { padding: 1px 6px; border-radius: 5px; background: var(--page); border: 1px solid var(--line); font-size: 0.74rem; color: var(--text); }
+      .steps.four { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 18px; }
+      .step code.method { display: inline-block; margin-top: 12px; }
+      .depin-bottom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-top: 18px; }
+      .depin-bottom > * { min-width: 0; }
+      .code-card.compact { display: flex; flex-direction: column; }
+      .code-card.compact pre { flex: 1; min-height: 0; }
+      .trust-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+      .trust-list li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; color: var(--muted); font-size: 0.85rem; }
+      .trust-list b { display: block; color: var(--text); font-size: 0.88rem; }
+      .trust-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: var(--orange-deep); background: var(--orange-soft); font-size: 0.95rem; }
+
       .methods-card { display: grid; grid-template-columns: 270px 1fr; gap: 18px; }
       select { width: 100%; height: 42px; padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: var(--page); }
       .method-help { min-height: 150px; max-height: 340px; padding: 15px; overflow: auto; border-radius: 10px; background: var(--page); color: var(--muted); white-space: pre-wrap; font-size: 0.77rem; }
@@ -170,7 +198,7 @@
 
       @media (max-width: 800px) {
         .hero { grid-template-columns: minmax(0, 1fr); gap: 34px; padding-top: 56px; }
-        .steps, .code-grid, .info-grid { grid-template-columns: minmax(0, 1fr); }
+        .steps, .steps.four, .code-grid, .info-grid, .depin-model, .depin-bottom { grid-template-columns: minmax(0, 1fr); }
         .section-heading, .methods-card { grid-template-columns: minmax(0, 1fr); display: grid; }
         .footer-top { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-top: 34px; }
       }
@@ -259,46 +287,106 @@
 
       <section class="section" id="depin">
         <div class="section-heading">
-          <div><p class="eyebrow">DEPIN ON TESTNET</p><h2>DePIN messaging through the same RPC</h2></div>
-          <p>The DePIN methods are regular node RPCs: call them through the endpoint above with the same JSON shape. A pool is a DePIN token; its sub-assets are sections, and a holder reads its section and everything below it.</p>
+          <div><p class="eyebrow">DEPIN ON TESTNET</p><h2>DePIN messaging, explained</h2></div>
+          <p>An off-chain, encrypted message pool whose membership is decided on chain. Every call is a regular whitelisted RPC through the endpoint above; nothing here needs a special URL.</p>
         </div>
-        <div class="info-grid">
-          <article class="info-card depin">
-            <h3>Sections are sub-assets</h3>
-            <p>The node serves one pool root. Every sub-asset under it is a section; access is inherited downward, never upward.</p>
-            <pre><code>&amp;NEWS                 pool root   — holders read everything below
-&amp;NEWS/GENERAL         section     — holders read GENERAL and its children
-&amp;NEWS/GENERAL/SPORT   sub-section — holders read SPORT only</code></pre>
-            <p>Holdings are soulbound, on-chain data: <code>listdepinholders</code>, <code>checkdepinvalidity</code> and <code>getpubkey</code> let any client verify who takes part without trusting this proxy.</p>
+
+        <div class="depin-model">
+          <article class="info-card depin depin-figure">
+            <h3>Access flows down the tree</h3>
+            <p>A DePIN token is the pool root; its sub-assets are sections. Holding a token opens that section and everything below it — never a parent, never a sibling.</p>
+            <svg viewBox="0 0 540 300" role="img" aria-labelledby="depinTreeTitle" style="margin-top: 14px;">
+              <title id="depinTreeTitle">Hierarchy &amp;NEWS → &amp;NEWS/GENERAL → &amp;NEWS/GENERAL/SPORT, with reading scope shaded per level</title>
+              <defs>
+                <marker id="depinArrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+                  <path d="M0 0 L10 5 L0 10 z" style="fill: var(--orange);" />
+                </marker>
+              </defs>
+              <!-- reading scopes: nested, darker as you go down. Each region has a
+                   caption row of its own above its node so labels never collide. -->
+              <rect x="14" y="14" width="452" height="276" rx="16" style="fill: color-mix(in srgb, var(--orange) 8%, transparent); stroke: var(--orange); stroke-opacity: 0.45; stroke-dasharray: 4 4;" />
+              <rect x="34" y="104" width="226" height="176" rx="12" style="fill: color-mix(in srgb, var(--orange) 14%, transparent); stroke: var(--orange); stroke-opacity: 0.55; stroke-dasharray: 4 4;" />
+              <rect x="54" y="190" width="186" height="68" rx="10" style="fill: color-mix(in srgb, var(--orange) 22%, transparent); stroke: var(--orange); stroke-opacity: 0.7; stroke-dasharray: 4 4;" />
+              <!-- edges -->
+              <path d="M240 70 C 240 96, 147 88, 147 108 L 147 126" fill="none" style="stroke: var(--orange);" stroke-width="1.6" marker-end="url(#depinArrow)" />
+              <path d="M240 70 C 240 96, 360 88, 360 108 L 360 126" fill="none" style="stroke: var(--orange);" stroke-width="1.6" marker-end="url(#depinArrow)" />
+              <path d="M147 158 L 147 212" fill="none" style="stroke: var(--orange);" stroke-width="1.6" marker-end="url(#depinArrow)" />
+              <!-- nodes -->
+              <g style="font-size: 11.5px; font-weight: 500;">
+                <rect x="178" y="40" width="124" height="30" rx="8" style="fill: var(--surface); stroke: var(--line);" />
+                <text x="240" y="59" text-anchor="middle" style="fill: var(--text);">&amp;NEWS</text>
+                <rect x="70" y="128" width="154" height="30" rx="8" style="fill: var(--surface); stroke: var(--line);" />
+                <text x="147" y="147" text-anchor="middle" style="fill: var(--text);">&amp;NEWS/GENERAL</text>
+                <rect x="292" y="128" width="136" height="30" rx="8" style="fill: var(--surface); stroke: var(--line);" />
+                <text x="360" y="147" text-anchor="middle" style="fill: var(--text);">&amp;NEWS/OTHERS</text>
+                <rect x="66" y="216" width="162" height="30" rx="8" style="fill: var(--surface); stroke: var(--line);" />
+                <text x="147" y="235" text-anchor="middle" style="fill: var(--text);">&amp;NEWS/GENERAL/SPORT</text>
+              </g>
+              <!-- captions: one row per region, above its node -->
+              <g style="font-size: 9.5px; fill: var(--muted);">
+                <text x="26" y="31">depth 0 · pool root</text>
+                <text x="46" y="120">depth 1</text>
+                <text x="66" y="206">depth 2</text>
+                <text x="360" y="180" text-anchor="middle">holder of &amp;NEWS</text>
+                <text x="360" y="193" text-anchor="middle">reads the whole pool</text>
+                <text x="147" y="272" text-anchor="middle">holder of GENERAL reads this branch</text>
+              </g>
+              <!-- direction rail -->
+              <g style="font-size: 9.5px; fill: var(--muted);">
+                <path d="M494 40 L 494 264" fill="none" style="stroke: var(--orange);" stroke-width="1.6" marker-end="url(#depinArrow)" />
+                <text x="482" y="152" text-anchor="middle" transform="rotate(-90 482 152)" style="fill: var(--orange-deep); font-size: 10.5px;">access is inherited downward</text>
+                <text x="514" y="152" text-anchor="middle" transform="rotate(-90 514 152)" style="font-size: 10px;">never upward, never sideways</text>
+              </g>
+            </svg>
+            <ul class="depin-legend">
+              <li><i class="scope-root"></i>holder of <code>&amp;NEWS</code> · whole pool</li>
+              <li><i class="scope-branch"></i>holder of <code>&amp;NEWS/GENERAL</code> · its branch</li>
+              <li><i class="scope-leaf"></i>holder of <code>&amp;NEWS/GENERAL/SPORT</code> · one section</li>
+            </ul>
+          </article>
+
+          <article class="info-card depin-facts">
+            <div>
+              <h3>Sections are sub-assets</h3>
+              <p>The node serves one pool root, such as <code>&amp;NEWS</code>. Each sub-asset under it is a section; the hierarchy, who holds what and which addresses have revealed a public key are all public chain data.</p>
+            </div>
+            <div>
+              <h3>Membership is soulbound</h3>
+              <p>A holder cannot transfer a DePIN token; only the owner token issues, freezes or revokes. Losing the token means losing access, instantly, without anyone having to revoke a key.</p>
+            </div>
+            <div>
+              <h3>Content is encrypted per recipient</h3>
+              <p>A message is encrypted once and its key wrapped for every active holder of the section and of its ancestors. The node stores ciphertext it cannot open; the recipient set is fixed when the message is sent.</p>
+            </div>
+            <div>
+              <h3>Every reply is signed by the node</h3>
+              <p>The node signs each reply with its pool key (<code>poolsig</code>). A client pins that key on first use and verifies replies locally — it never has to trust the proxy in between.</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="steps four">
+          <article class="step"><span class="step-number">01</span><h3>Discover</h3><p>Read the pool identity and its section names. Public, unauthenticated, signed by the node.</p><code class="method">depingetmsginfo · depinlistsections</code></article>
+          <article class="step"><span class="step-number">02</span><h3>Prove the address</h3><p>Sign a timestamped request with your own key and receive a single-use nonce, encrypted so only you can read it. Sign the nonce.</p><code class="method">depinchallenge</code></article>
+          <article class="step"><span class="step-number">03</span><h3>Read your branch</h3><p>Nonce + signature unlock the messages of a section and its children. Each reply chains the next nonce, so one proof serves a whole session.</p><code class="method">depinreceivemsg</code></article>
+          <article class="step"><span class="step-number">04</span><h3>Publish</h3><p>Resolve the recipients up to the pool root, encrypt and sign locally, wrap the result for the pool key and hand it in. The node checks, stores, and never reads it.</p><code class="method">depingetancestorrecipients · depinsubmitmsg</code></article>
+        </div>
+
+        <div class="depin-bottom">
+          <article class="code-card compact">
+            <div class="code-top"><h3>Same POST, same endpoint</h3><button class="copy-code" type="button" data-copy-target="depinExample">Copy</button></div>
+            <pre><code id="depinExample"></code></pre>
           </article>
           <article class="info-card">
             <h3>Who holds what</h3>
-            <ul>
-              <li><b>The holder</b> keeps its own key: it signs requests, decrypts replies and encrypts messages locally. The node never sees it.</li>
-              <li><b>The node</b> signs every reply with its pool key (<code>poolsig</code>). Pin <code>depinpoolpkey</code> from <code>depingetmsginfo</code> on first use and verify replies against it.</li>
-              <li><b>This proxy</b> only whitelists and rate-limits <code>depin*</code> calls per origin IP. It never sees a private key or a plaintext message.</li>
+            <ul class="trust-list" style="margin-top: 14px;">
+              <li><span class="trust-icon">🔑</span><span><b>The holder</b> keeps its private key. It signs requests, decrypts replies and encrypts messages locally; the node never sees it.</span></li>
+              <li><span class="trust-icon">✍️</span><span><b>The node</b> holds the pool key: it opens submission envelopes, enforces access from chain state and signs every reply.</span></li>
+              <li><span class="trust-icon">🛡️</span><span><b>This proxy</b> whitelists the <code>depin*</code> methods and rate-limits them per origin IP. It sees neither keys nor plaintext.</span></li>
             </ul>
+            <p class="note">Client-side cryptography (signmessage-compatible signatures, ECIES) is implemented in <a href="https://github.com/NeuraiProject/DePIN-Messaging" target="_blank" rel="noreferrer">DePIN-Messaging</a>; the byte-exact contract lives in the node repository (<code>doc/depin-messaging-protocol.md</code>).</p>
           </article>
         </div>
-        <div class="code-grid" style="margin-top: 18px;">
-          <article class="code-card">
-            <div class="code-top"><h3>1 · Discover the pool and its sections</h3><button class="copy-code" type="button" data-copy-target="depinDiscover">Copy</button></div>
-            <pre><code id="depinDiscover"></code></pre>
-          </article>
-          <article class="code-card">
-            <div class="code-top"><h3>2 · Authenticate for a section</h3><button class="copy-code" type="button" data-copy-target="depinAuth">Copy</button></div>
-            <pre><code id="depinAuth"></code></pre>
-          </article>
-          <article class="code-card">
-            <div class="code-top"><h3>3 · Read a section and its children</h3><button class="copy-code" type="button" data-copy-target="depinRead">Copy</button></div>
-            <pre><code id="depinRead"></code></pre>
-          </article>
-          <article class="code-card">
-            <div class="code-top"><h3>4 · Publish to a sub-section</h3><button class="copy-code" type="button" data-copy-target="depinPublish">Copy</button></div>
-            <pre><code id="depinPublish"></code></pre>
-          </article>
-        </div>
-        <p class="note" style="margin-top: 14px;"><code>signMessage</code>, <code>decryptForAddress</code>, <code>buildDepinMessage</code> and <code>eciesEncrypt</code> are client-side cryptography (signmessage-compatible signatures, ECIES). A JavaScript implementation lives in <a href="https://github.com/NeuraiProject/DePIN-Messaging" target="_blank" rel="noreferrer">DePIN-Messaging</a>; the byte-exact contract is <code>doc/depin-messaging-protocol.md</code> in the node repository.</p>
       </section>
 
       <section class="section" id="methods">
