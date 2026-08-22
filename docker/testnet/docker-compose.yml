@@ -24,8 +24,8 @@ services:
       NEURAI_REST: "1"
 
       # ── RPC ──────────────────────────────────────────────────────────────
-      # RPC user/pass/port come from .env so the proxy connects with the exact
-      # same values — change them once in .env, both services follow.
+      # RPC user/pass/port come from .env (copy .env.example) so the proxy
+      # connects with the exact same values — change them once, both follow.
       NEURAI_RPC_USER: "${NODE_RPC_USER:-neurai}"
       NEURAI_RPC_PASSWORD: "${NODE_RPC_PASSWORD:-neuraipassword12}"
       NEURAI_RPC_ALLOW_IP: "0.0.0.0/0"
@@ -94,7 +94,9 @@ services:
       PROXY_CONCURRENCY: "4"
       PROXY_ENVIRONMENT: "Neurai Testnet"
       PROXY_HEADING: "Neurai RPC Proxy (testnet)"
-      PROXY_ENDPOINT: "https://rpc-testnet.neurai.org/rpc"
+      # Public URL shown on the web page and returned by GET /settings. From
+      # .env; empty = derive it from the request host.
+      PROXY_ENDPOINT: "${PROXY_ENDPOINT-https://rpc-testnet.neurai.org/rpc}"
 
       NEURAI_NODE_NAME: "neuraid-testnet"
       # Upstream URL is built from the SAME NODE_RPC_PORT the node uses, so a

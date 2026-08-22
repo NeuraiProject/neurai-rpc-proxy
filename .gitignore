@@ -69,13 +69,10 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
+# dotenv environment variables file. The docker stacks ship a tracked
+# .env.example next to their docker-compose.yml; the real .env is local.
 .env
 .env.test
-# ...but the docker stacks ship a tracked .env as their single source of shared
-# ports/credentials (testnet values only), so keep those versioned.
-!/docker/testnet/.env
-!/docker/mainnet/.env
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

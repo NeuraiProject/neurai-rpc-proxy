@@ -2,7 +2,13 @@ name: neurai-wallet-rpc-mainnet
 
 services:
   neuraid:
-    image: neuraiproject/neurai-node:v1.0.5
+    # Official mainnet image from Docker Hub. Its entrypoint writes
+    # /data/neurai.conf from the NEURAI_* variables below on the FIRST start
+    # only and keeps it in the volume: editing a value here afterwards does
+    # not change a node that already has its file (see README, "Docker").
+    # The data directory is /data (v1.0.5 used /data/node — migration in the
+    # README). neuraid runs as the unprivileged user neurai (uid 999).
+    image: neuraiproject/neurai-node:${NODE_IMAGE_TAG:-v1.0.6}
     restart: unless-stopped
 
     logging:
@@ -10,20 +16,61 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+    environment:
+      # ── Network ──────────────────────────────────────────────────────────
+      # NEURAI_LISTEN: 1 to accept inbound P2P connections
+      NEURAI_LISTEN: "0"
+      NEURAI_P2P_PORT: "19000"
+      NEURAI_REST: "1"
+
+      # ── RPC ──────────────────────────────────────────────────────────────
+      # User/pass/port come from .env so the proxy connects with the exact
+      # same values. The image binds RPC to 127.0.0.1 by default, which the
+      # proxy (another container) could not reach: bind to the Docker network.
+      # The port is not published on the host, so 0.0.0.0/0 means "this
+      # compose network", not the internet.
+      NEURAI_RPC_USER: "${NODE_RPC_USER:-neurai}"
+      NEURAI_RPC_PASSWORD: "${NODE_RPC_PASSWORD:-changeme}"
+      NEURAI_RPC_PORT: "${NODE_RPC_PORT:-19001}"
+      NEURAI_RPC_BIND: "0.0.0.0"
+      NEURAI_RPC_ALLOW_IP: "0.0.0.0/0"
+      NEURAI_RPC_THREADS: "8"
+      NEURAI_RPC_WORK_QUEUE: "64"
+
+      # A public gateway node needs no wallet.
+      NEURAI_DISABLE_WALLET: "1"
+
+      # Indexes the whitelisted getaddress*/getassetdata calls depend on.
+      NEURAI_TXINDEX: "1"
+      NEURAI_ASSETINDEX: "1"
+      NEURAI_ADDRESSINDEX: "1"
+      NEURAI_TIMESTAMPINDEX: "1"
+      NEURAI_SPENTINDEX: "1"
+      NEURAI_DB_CACHE: "1024"
+
+      # ZMQ, on the Docker network only (not published).
+      NEURAI_ZMQ_PUB_HASH_BLOCK: "tcp://0.0.0.0:28332"
+      NEURAI_ZMQ_PUB_HASH_TX: "tcp://0.0.0.0:28332"
+      NEURAI_ZMQ_PUB_RAW_TX: "tcp://0.0.0.0:28332"
+
+      # Options the entrypoint has no switch for; appended verbatim.
+      NEURAI_EXTRA_CONF: |
+        rpcservertimeout=240
+        shrinkdebugfile=1
+
     volumes:
       - neurai_data_mainnet:/data
-      - ./neurai.conf:/data/node/neurai.conf:ro
 
     networks:
       - neurai_net_mainnet
 
     healthcheck:
-
-      test: ["CMD", "neurai-cli", "-datadir=/data/node", "getblockchaininfo"]
+      test: ["CMD", "neurai-cli", "-datadir=/data", "getblockchaininfo"]
       interval: 60s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
 
   rpc-proxy:
     build:
@@ -39,19 +86,32 @@ services:
         max-file: "5"
 
     environment:
-      PROXY_PORT: "19010"
+      # ── Proxy HTTP server ────────────────────────────────────────────────
+      PROXY_PORT: "${PROXY_PORT:-19010}"
       PROXY_CONCURRENCY: "4"
       PROXY_ENVIRONMENT: "Neurai"
       PROXY_HEADING: "Neurai RPC Proxy (mainnet)"
-      PROXY_ENDPOINT: "https://rpc-main.neurai.org/rpc"
+      # Public URL shown on the web page and returned by GET /settings. From
+      # .env; empty = derive it from the request host.
+      PROXY_ENDPOINT: "${PROXY_ENDPOINT-https://rpc-main.neurai.org/rpc}"
 
       NEURAI_NODE_NAME: "neuraid-mainnet"
-      NEURAI_NODE_URL: "http://neuraid:19001"
-      NEURAI_RPC_USER: "neurai"
-      NEURAI_RPC_PASSWORD: "changeme"
+      # Upstream URL is built from the SAME NODE_RPC_PORT the node uses, so a
+      # port change in .env updates both sides automatically.
+      NEURAI_NODE_URL: "http://neuraid:${NODE_RPC_PORT:-19001}"
+      NEURAI_RPC_USER: "${NODE_RPC_USER:-neurai}"
+      NEURAI_RPC_PASSWORD: "${NODE_RPC_PASSWORD:-changeme}"
+      # Per origin IP and minute for depin* methods; over it, the IP is
+      # blocked for PROXY_DEPIN_BAN_MINUTES. Set PROXY_TRUST_PROXY=true only
+      # when a trusted reverse proxy in front sets X-Forwarded-For.
+      PROXY_DEPIN_RATE_LIMIT: "60"
+      PROXY_DEPIN_BAN_MINUTES: "60"
+      PROXY_TRUST_PROXY: "false"
 
     ports:
-      - "127.0.0.1:19010:19010"
+      # PROXY_BIND + PROXY_PORT from .env. Host and container port are the same
+      # single value; PROXY_BIND picks loopback (secure) vs 0.0.0.0 (public).
+      - "${PROXY_BIND:-127.0.0.1}:${PROXY_PORT:-19010}:${PROXY_PORT:-19010}"
 
     networks:
       - neurai_net_mainnet
@@ -61,7 +121,7 @@ services:
         condition: service_healthy
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:19010/settings || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:${PROXY_PORT:-19010}/settings || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

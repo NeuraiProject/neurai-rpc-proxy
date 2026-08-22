@@ -2,9 +2,10 @@
 FROM debian:12 AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
-# Use the current stable upstream release.  The old DePIN-Test branch was an
-# experimental fork and is not compatible with the supported node anymore.
-ARG BRANCH=v1.0.5
+# Git ref to build: a release tag (upstream tags carry no "v": 1.0.6) or a
+# branch. The testnet compose overrides it with DePIN-Test; mainnet does not
+# build at all, it pulls neuraiproject/neurai-node from Docker Hub.
+ARG BRANCH=1.0.6
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     autoconf \

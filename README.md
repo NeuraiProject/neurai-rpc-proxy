@@ -35,9 +35,9 @@ takes part with `listdepinholders`, `checkdepinvalidity` and `getpubkey`. The pr
 web page walks through the sequence (discover → authenticate → read → publish) as
 `fetch` examples against the configured endpoint.
 
-The Docker deployments intentionally differ: mainnet uses the stable `v1.0.5` node,
-which has no DePIN messaging implementation, while testnet builds the `DePIN-Test`
-branch and enables it. That branch serves DePIN **protocol 2** on the node's RPC port
+The Docker deployments intentionally differ: mainnet pulls the official
+`neuraiproject/neurai-node:v1.0.6` image, which has no DePIN messaging implementation,
+while testnet builds the `DePIN-Test` branch and enables it. That branch serves DePIN **protocol 2** on the node's RPC port
 only; there is no separate gateway port any more.
 
 Protocol 2 in one paragraph: a holder signs a timestamped request with its own key
@@ -137,6 +137,46 @@ cd neurai-rpc-proxy
 npm install 
 ```
 
+### Docker
+
+Two stacks, one per network, each with its own `.env`:
+
+```
+cd docker/mainnet        # or docker/testnet
+cp .env.example .env     # ports and RPC credentials shared by node and proxy
+docker compose up -d
+```
+
+`.env` is ignored by git, so your values survive a `git pull`; `.env.example` is the
+template that changes when a new variable appears. Every variable has the same
+default in the compose file, so a stack also starts without a `.env`.
+
+- **mainnet** pulls `neuraiproject/neurai-node:v1.0.6` from Docker Hub. The image
+  writes `/data/neurai.conf` from its `NEURAI_*` variables **on the first start only**
+  and keeps it in the volume, so changing a value in `.env` later does not reach a
+  node that already has its file. To apply one, delete the file and restart; the
+  entrypoint regenerates it: `docker compose exec neuraid rm /data/neurai.conf &&
+  docker compose restart neuraid`. The proxy, by contrast, re-reads `.env` on every
+  `up -d`, so keep both in step. The node runs as the unprivileged user `neurai`
+  (uid 999); the RPC and ZMQ ports stay inside the compose network.
+- **testnet** builds the `DePIN-Test` branch with `docker/node/Dockerfile` and the
+  env-driven `entrypoint.sh` next to it; see the DePIN section above.
+
+**Upgrading a mainnet node from the v1.0.5 image:** its data directory was
+`/data/node`; v1.0.6 uses `/data` and the volume keeps the old layout, so without a
+move the new node would resync from scratch. Once, with the stack stopped:
+
+```
+docker compose down
+docker run --rm -v neurai-wallet-rpc-mainnet_neurai_data_mainnet:/data alpine sh -c \
+  'cd /data && for f in node/* node/.[!.]*; do [ -e "$f" ] && mv "$f" .; done; \
+   rmdir node; rm -f neurai.conf .lock; chown -R 999:999 /data'
+docker compose up -d
+```
+
+The old `neurai.conf` is dropped on purpose (it was a read-only bind mount, only an
+empty mount point may be left behind) so the image generates the new one from `.env`.
+
 ### How do I configure this software?
 Configure your setup in ./config.json
 
@@ -204,7 +244,7 @@ dbcache=4096
 For the testnet `DePIN-Test` branch, set `depinmsg=1` and `depinmsgtoken`, keep the
 wallet enabled, and optionally tune `depinratelimit` (the compose file does this
 through environment variables). There is no DePIN port: the service is served on the RPC port
-the proxy already talks to. The stable `v1.0.5` mainnet node does not accept these
+the proxy already talks to. The stable `v1.0.6` mainnet node does not accept these
 options.
 
 ## Sir, how do I start this application?
