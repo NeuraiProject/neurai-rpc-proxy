@@ -100,10 +100,13 @@ rpc("getrawtransaction", ["301ec56896153463576c47ac40956e58d2b9fa7de87fad39128c5
 
 //Get address balance
 rpc("getaddressbalance", [{ "addresses": ["RXissueSubAssetXXXXXXXXXXXXXWcwhwL"] }]).then(balance => {
-    const sum = balance.balance / 1e8;//divide by 100 000 000;
-    console.log("RXissueSubAssetXXXXXXXXXXXXXWcwhwL balance", sum.toLocaleString());
+    const raw = BigInt(balance.balance);
+    const sum = `${raw / 100000000n}.${(raw % 100000000n).toString().padStart(8, "0")}`;
+    console.log("RXissueSubAssetXXXXXXXXXXXXXWcwhwL balance", sum);
 })
 
+
+const { stringifyRpcJson } = require("@neuraiproject/neurai-rpc");
 
 async function rpc(method, params) {
     const data = { method, params };
@@ -113,7 +116,7 @@ async function rpc(method, params) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data) // body data type must match "Content-Type" header
+        body: stringifyRpcJson(data) // Supports bigint and rpcNumber parameters
     });
     const obj = await response.json(); // parses JSON response into native JavaScript objects 
     return obj.result;
@@ -488,3 +491,20 @@ settxfee amount
 signmessage "address" "message"
 
 ```
+
+## Exact numeric transport (1.2.1)
+
+The proxy requires neurai-rpc >= 0.6.1. It preserves large integers and exact
+fractional amounts from the node. Safe values remain JSON numbers; unsafe
+values are returned as decimal strings, including nested XNA and asset fields
+and cached results. Clients must keep these strings or use bigint for raw
+integer units rather than converting them to Number.
+
+Incoming JSON numeric parameters are parsed without rounding and forwarded as
+numeric tokens. Quoted strings remain strings. For JavaScript clients, use
+`stringifyRpcJson` with bigint or `rpcNumber("100000000.00000001")` when forming
+requests. JSON.stringify of an already rounded number cannot recover its digits.
+Cache keys preserve the distinction between numeric tokens and quoted strings.
+
+Rebuild/restart the deployed proxy to activate this update. Updating a client
+library alone cannot recover digits already rounded by an older proxy.

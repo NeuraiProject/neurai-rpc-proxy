@@ -12,6 +12,7 @@ resolve undefined for those, silently swallowing the error, so the proxy answere
 
 let fakeNode;
 let fakeNodeRequests;
+let fakeNodeRawRequests;
 let proxyServer;
 let proxyUrl;
 
@@ -25,6 +26,7 @@ function startFakeNode() {
       let raw = "";
       req.on("data", (chunk) => (raw += chunk));
       req.on("end", () => {
+        fakeNodeRawRequests.push(raw);
         const parsed = JSON.parse(raw);
         fakeNodeRequests.push(parsed);
 
@@ -33,7 +35,7 @@ function startFakeNode() {
           body: { result: null, error: null, id: parsed.id },
         };
         res.writeHead(canned.status, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ id: parsed.id, ...canned.body }));
+        res.end(canned.rawBody ?? JSON.stringify({ id: parsed.id, ...canned.body }));
       });
     });
     fakeNode.listen(0, "127.0.0.1", () => resolve(fakeNode.address().port));
@@ -42,6 +44,7 @@ function startFakeNode() {
 
 beforeAll(async () => {
   fakeNodeRequests = [];
+  fakeNodeRawRequests = [];
   nodeResponses = {
     // Every /rpc call is preceded by a getbestblockhash to drive cache invalidation
     getbestblockhash: { status: 200, body: { result: "aaaa", error: null } },
@@ -182,5 +185,56 @@ describe("GET /getCache no longer reports DePIN gateway state", () => {
     expect(body.depinChallenges).toBeUndefined();
     expect(body.depinNodes).toBeUndefined();
     expect(Array.isArray(body.nodes)).toBe(true);
+  });
+});
+
+
+describe("exact RPC amounts", () => {
+  test("preserves large XNA and asset responses on cache misses and hits", async () => {
+    nodeResponses.getaddressbalance = {
+      status: 200,
+      rawBody: '{"result":[{"assetName":"XNA","balance":9007199254740993},{"assetName":"BIG","balance":10000000000000001}],"error":null}',
+    };
+    const before = fakeNodeRequests.filter(r => r.method === "getaddressbalance").length;
+    for (let i = 0; i < 2; i++) {
+      const response = await post("/rpc", { method: "getaddressbalance", params: [{ addresses: ["large-fixture"] }, true] });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ result: [
+        { assetName: "XNA", balance: "9007199254740993" },
+        { assetName: "BIG", balance: "10000000000000001" },
+      ] });
+    }
+    expect(fakeNodeRequests.filter(r => r.method === "getaddressbalance").length - before).toBe(1);
+  });
+
+  test("preserves fractional asset supply and negative mempool deltas", async () => {
+    nodeResponses.getassetdata = { status: 200, rawBody: '{"result":{"amount":100000000.00000001,"units":8}}' };
+    nodeResponses.getaddressmempool = { status: 200, rawBody: '{"result":[{"satoshis":-9007199254740993},{"satoshis":1}]}' };
+    expect(await (await post("/rpc", { method: "getassetdata", params: ["BIG"] })).json()).toEqual({ result: { amount: "100000000.00000001", units: 8 } });
+    expect(await (await post("/rpc", { method: "getaddressmempool", params: [{ addresses: ["large-fixture"] }] })).json()).toEqual({ result: [{ satoshis: "-9007199254740993" }, { satoshis: 1 }] });
+  });
+
+  test("forwards original numeric tokens, including nested and exponent forms", async () => {
+    const params = '[[],{"address":100000000.00000001,"nested":[9007199254740993,-9007199254740993,1e20,"9007199254740993"]}]';
+    const response = await fetch(`${proxyUrl}/rpc`, { method: "POST", headers: { "Content-Type": "application/json" }, body: `{"method":"createrawtransaction","params":${params}}` });
+    expect(response.status).toBe(200);
+    const raw = fakeNodeRawRequests.findLast(r => r.includes('"method":"createrawtransaction"'));
+    expect(raw).toContain(`"params":${params}`);
+  });
+
+  test("cache keys distinguish adjacent unsafe integers and quoted strings", async () => {
+    const before = fakeNodeRequests.filter(r => r.method === "getblockhash").length;
+    for (const token of ['9007199254740992', '9007199254740993', '"9007199254740993"', '9007199254740993']) {
+      const response = await fetch(`${proxyUrl}/rpc`, { method: "POST", headers: { "Content-Type": "application/json" }, body: `{"method":"getblockhash","params":[${token}]}` });
+      expect(response.status).toBe(200);
+    }
+    expect(fakeNodeRequests.filter(r => r.method === "getblockhash").length - before).toBe(3);
+  });
+
+  test("malformed JSON returns 400 and never reaches the node", async () => {
+    const before = fakeNodeRequests.length;
+    const response = await fetch(`${proxyUrl}/rpc`, { method: "POST", headers: { "Content-Type": "application/json" }, body: '{"method":"getblockcount","params":[NaN]}' });
+    expect(response.status).toBe(400);
+    expect(fakeNodeRequests.length).toBe(before);
   });
 });

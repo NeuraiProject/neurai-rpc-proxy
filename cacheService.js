@@ -1,3 +1,4 @@
+const { stringifyRpcJson } = require("@neuraiproject/neurai-rpc");
 let cache = {};
 
 let methodsRequested = {};
@@ -9,7 +10,7 @@ function getMethods() {
   return methodsRequested;
 }
 function createKey(method, params) {
-  return JSON.stringify({ method, params });
+  return stringifyRpcJson({ method, params });
 }
 
 function getKeys() {

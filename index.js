@@ -1,3 +1,4 @@
+const { parseRequestJson } = require("./rpcJson");
 const { methods } = require("@neuraiproject/neurai-rpc");
 const { getRPCNode, getNodes } = require("./getRPCNode");
 const { default: PQueue } = require("p-queue"); //NOTE version 6 with support for CommonJS
@@ -49,7 +50,19 @@ const app = express();
 app.use(cors());
 
 //Default size limit for request are too small, increase it
-app.use(express.json({ limit: "2mb" }));
+app.use(express.text({ type: "application/json", limit: "2mb" }));
+app.use((req, res, next) => {
+  if (typeof req.body !== "string") return next();
+  try {
+    req.body = parseRequestJson(req.body);
+    if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+      return res.status(400).send({ error: "Expected a JSON-RPC request object" });
+    }
+    next();
+  } catch (_) {
+    return res.status(400).send({ error: "Invalid JSON request" });
+  }
+});
 
 const config = getConfig();
 
@@ -73,7 +86,6 @@ const queue = new PQueue({ concurrency: config.concurrency || 1 });
 
 const port = config.local_port || process.env.PORT || 80;
 
-app.use(express.json());
 
 app.use(express.static("www"));
 
@@ -219,7 +231,7 @@ async function addToQueue(request, response) {
         });
     } catch (e) {
       console.log("Error!", e);
-      return Promise.resolve();
+      if (!response.headersSent) return response.status(500).send({ error: "RPC request failed" });
     }
   }
   //return it so the .catch() at the call site is real
@@ -301,6 +313,7 @@ app.post("/rpc", async (req, res) => {
     //Add RCP call to queue
     addToQueue(req, res).catch((e) => {
       console.log("Something went wrong", e);
+      if (!res.headersSent) res.status(500).send({ error: "RPC request failed" });
     });
   } catch (e) {
     console.log("ERROR", e);
