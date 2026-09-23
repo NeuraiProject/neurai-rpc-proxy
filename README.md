@@ -99,10 +99,10 @@ rpc("getrawtransaction", ["301ec56896153463576c47ac40956e58d2b9fa7de87fad39128c5
 })
 
 //Get address balance
-rpc("getaddressbalance", [{ "addresses": ["RXissueSubAssetXXXXXXXXXXXXXWcwhwL"] }]).then(balance => {
+rpc("getaddressbalance", [{ "addresses": ["NLhdtwjgrcEkRqjJZkRY4sjhkJ93EytLeE"] }]).then(balance => {
     const raw = BigInt(balance.balance);
     const sum = `${raw / 100000000n}.${(raw % 100000000n).toString().padStart(8, "0")}`;
-    console.log("RXissueSubAssetXXXXXXXXXXXXXWcwhwL balance", sum);
+    console.log("NLhdtwjgrcEkRqjJZkRY4sjhkJ93EytLeE balance", sum);
 })
 
 
@@ -122,6 +122,33 @@ async function rpc(method, params) {
     return obj.result;
 } 
 ``` 
+### Address types
+
+The whitelist is by method name, so the address-taking methods accept every
+address type the node knows: Legacy P2PKH (`N…`/`t…`), generic AuthScript
+witness v1 (`nc1p…`/`tnc1p…`), post-quantum witness v2 (`pq1z…`/`tpq1z…`) and
+ECDSA witness v3 (`nq1r…`/`tnq1r…`). Nodes that predate these address types
+report them as invalid.
+
+`validateaddress` is whitelisted and, for witness addresses, returns extra
+fields: `isauthscript` (`true`), `witness_version` (`1`, `2` or `3`), `family`
+(`"authscript"`, `"pq"` or `"ecdsa"`) and, for v2/v3 only, `commitment` (the
+32-byte AuthScript commitment as a uint256 hex string, byte-reversed with
+respect to the scriptPubKey). The node adds them in builds with wallet
+support, like `ismine`/`iswatchonly`.
+
+```
+rpc("validateaddress", ["tnq1r0c9zl485wv7wcfutxfyv8k2ltpfk5hdyp3s7g4chlphx8d2m6npqwxvjya"])
+// { "isvalid": true, "address": "tnq1r0c9zl…", "scriptPubKey": "53207e0a2fd4…",
+//   "ismine": false, "iswatchonly": false, "isscript": false,
+//   "isauthscript": true, "witness_version": 3, "family": "ecdsa",
+//   "commitment": "c2d45bb5636e…" }
+```
+
+DePIN methods only work with Legacy P2PKH addresses; `getpubkey` answers for
+Legacy P2PKH and AuthScript v1 addresses and rejects v2/v3 with
+`Address does not refer to a key`.
+
 ## Features and limitations
 
 This software lives up to parts of the JSON-RPC 2.0 Specification
@@ -445,18 +472,20 @@ abortrescan
 addmultisigaddress nrequired ["key",...] ( "account" )
 addwitnessaddress "address"
 backupwallet "destination"
-bumpfee has been deprecated on the RVN Wallet.
+bumpfee has been deprecated on the XNA Wallet.
+dumpextkeypq
 dumpprivkey "address"
 dumpwallet "filename"
 encryptwallet "passphrase"
+exportxpqpub count ( chain offset )
 getaccount "address"
 getaccountaddress "account"
 getaddressesbyaccount "account"
 getbalance ( "account" minconf include_watchonly )
 getmasterkeyinfo
 getmywords ( "account" )
-getnewaddress ( "account" )
-getrawchangeaddress
+getnewaddress ( "account" "address_type" )
+getrawchangeaddress ( "address_type" )
 getreceivedbyaccount "account" ( minconf )
 getreceivedbyaddress "address" ( minconf )
 gettransaction "txid" ( include_watchonly )
@@ -472,6 +501,7 @@ keypoolrefill ( newsize )
 listaccounts ( minconf include_watchonly)
 listaddressgroupings
 listlockunspent
+listpqaddresses
 listreceivedbyaccount ( minconf include_empty include_watchonly)
 listreceivedbyaddress ( minconf include_empty include_watchonly)
 listsinceblock ( "blockhash" target_confirmations include_watchonly include_removed )
