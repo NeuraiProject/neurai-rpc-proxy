@@ -29,12 +29,14 @@ const whitelist = [
   "getblock",
   "getblockchaininfo",
   "getblockcount",
+  //"getblockdeltas",
   "getblockhash",
   // "getblockhashes", //This can kill the service if you ask for all block hashes years back
   "getblockheader",
   "getchaintips",
   "getchaintxstats",
   "getdifficulty",
+  //"getibdstatus", // node diagnostics (header-sync timing per peer), like the Network section
   "getmempoolancestors",
   "getmempooldescendants",
   "getmempoolentry",
@@ -158,10 +160,13 @@ const whitelist = [
   // the end of this section.
   "getpubkey",
   "checkdepinvalidity",
+  //"closedepin",  // transfer state (open/close/seal): owner-only wallet writes
   //"freezedepin",
   "depingetancestorrecipients",
   "listdepinholders",
   "listdepinaddresses",
+  //"opendepin",
+  //"sealdepin",
   //"selfrevokedepin",
   //"unfreezedepin",
 
@@ -203,9 +208,11 @@ const whitelist = [
     "addwitnessaddress",
     "backupwallet",
     "bumpfee",
+    "dumpextkeypq",
     "dumpprivkey",
     "dumpwallet",
     "encryptwallet",
+    "exportxpqpub",
     "getaccount",
     "getaccountaddress",
     "getaddressesbyaccount",
@@ -229,6 +236,7 @@ const whitelist = [
     "listaccounts",
     "listaddressgroupings",
     "listlockunspent",
+    "listpqaddresses",
     "listreceivedbyaccount",
     "listreceivedbyaddress",
     "listsinceblock",
@@ -246,6 +254,9 @@ const whitelist = [
     "setaccount",
     "settxfee",
     "signmessage",
+    "walletlock",
+    "walletpassphrase",
+    "walletpassphrasechange",
      */
 ];
 

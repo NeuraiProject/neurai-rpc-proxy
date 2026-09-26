@@ -1,14 +1,14 @@
 {
   "name": "neurai-rpc-proxy",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Neurai Web API via safe proxy",
   "main": "index.js",
   "dependencies": {
-    "@neuraiproject/neurai-rpc": "^0.6.1",
+    "@neuraiproject/neurai-rpc": "^0.6.2",
     "cors": "2.8.5",
     "express": "^4.21.2",
-    "p-queue": "6.6.2",
-    "lossless-json": "^4.3.0"
+    "lossless-json": "^4.3.0",
+    "p-queue": "6.6.2"
   },
   "scripts": {
     "start": "node --no-deprecation index",

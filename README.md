@@ -321,13 +321,14 @@ getbestblockhash
 getblock "blockhash" ( verbosity ) 
 getblockchaininfo
 getblockcount
-
+getblockdeltas "blockhash"
 getblockhash height
 getblockhashes timestamp
 getblockheader "hash" ( verbose )
 getchaintips
 getchaintxstats ( nblocks blockhash )
 getdifficulty
+getibdstatus
 getmempoolancestors txid (verbose)
 getmempooldescendants txid (verbose)
 getmempoolentry txid
@@ -442,11 +443,14 @@ verifymessage "address" "signature" "message"
 
 == Depin asset ==
 checkdepinvalidity
+closedepin "asset_name" ( "change_address" )
 depingetancestorrecipients
 freezedepin
 getpubkey
 listdepinaddresses
 listdepinholders
+opendepin "asset_name" ( "change_address" )
+sealdepin "asset_name" ( "change_address" )
 selfrevokedepin
 unfreezedepin
 
@@ -519,6 +523,9 @@ sendtoaddress "address" amount ( "comment" "comment_to" subtractfeefromamount re
 setaccount "address" "account"
 settxfee amount
 signmessage "address" "message"
+walletlock
+walletpassphrase "passphrase" timeout
+walletpassphrasechange "oldpassphrase" "newpassphrase"
 
 ```
 
