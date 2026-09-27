@@ -8,6 +8,7 @@
 #   PROXY_ENVIRONMENT     Neurai                     label exposed via GET /settings
 #   PROXY_HEADING         Neurai RPC Proxy           label exposed via GET /settings
 #   PROXY_ENDPOINT        (empty)                    public URL of this proxy (GET /settings)
+#   NEURAI_EXPECTED_GENESIS 00000044...            required chain identity
 #   NEURAI_NODE_NAME      neuraid                    node display name
 #   NEURAI_NODE_URL       http://neuraid:19001       upstream node RPC URL
 #   NEURAI_RPC_USER       neurai                     node rpcuser
@@ -39,6 +40,7 @@ else
   "trust_proxy": ${PROXY_TRUST_PROXY:-false},
   "endpoint": "${PROXY_ENDPOINT:-}",
   "environment": "${PROXY_ENVIRONMENT:-Neurai}",
+  "expected_genesis": "${NEURAI_EXPECTED_GENESIS:-00000044d33c0c0ba019be5c0249730424a69cb4c222153322f68c6104484806}",
   "heading": "${PROXY_HEADING:-Neurai RPC Proxy}",
   "local_port": ${PROXY_PORT:-19999},
   "nodes": [

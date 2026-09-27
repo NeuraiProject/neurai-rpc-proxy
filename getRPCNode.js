@@ -1,69 +1,76 @@
 const NeuraiRPC = require("@neuraiproject/neurai-rpc");
-
 const getConfig = require("./getConfig");
+
 const config = getConfig();
-const allNodes = [];
+const expectedGenesis = config.expected_genesis;
+if (typeof expectedGenesis !== "string" || !/^[0-9a-f]{64}$/i.test(expectedGenesis)) {
+  throw new Error("config.expected_genesis must be a 64-character block hash");
+}
 
-//At startup initialize all RPCs, you can have one or multiple Neurai nodes
 for (const node of config.nodes) {
-  const rpc = NeuraiRPC.getRPC(node.username, node.password, node.neurai_url);
-  allNodes.push({ name: node.name, rpc, neuraiUrl: node.neurai_url });
-
-  // depin_enabled/depin_url used to point at a DePIN gateway port that no longer exists. The
-  // proxy no longer talks to it: every depin* command is a regular RPC on the
-  // node URL above. Warn instead of failing so old config.json files still boot.
   if (node.depin_enabled !== undefined || node.depin_url !== undefined) {
-    console.log(
-      `Node "${node.name}": depin_enabled/depin_url are obsolete and ignored. ` +
-        "DePIN commands now go through the standard RPC port."
-    );
+    console.warn("depin_enabled and depin_url are obsolete and ignored");
   }
 }
 
-/* Every x seconds, check the status of the nodes */
+const allNodes = config.nodes.map((node) => ({
+  name: node.name,
+  rpc: NeuraiRPC.getRPC(node.username, node.password, node.neurai_url),
+  neuraiUrl: node.neurai_url,
+  active: false,
+}));
+
+let healthCheckPromise = null;
+
 async function healthCheck() {
   for (const node of allNodes) {
     try {
-      const a = await node.rpc("getbestblockhash", []);
-      node.bestblockhash = a;
-
+      const genesis = await node.rpc("getblockhash", [0]);
+      if (typeof genesis !== "string" || genesis.toLowerCase() !== expectedGenesis.toLowerCase()) {
+        node.active = false;
+        node.healthError = "Unexpected genesis block";
+        continue;
+      }
+      node.bestblockhash = await node.rpc("getbestblockhash", []);
       node.active = true;
-    } catch {
+      node.healthError = undefined;
+    } catch (error) {
       node.active = false;
+      node.healthError = "RPC health check failed";
     }
   }
 }
-//unref so the health check alone never keeps the process alive
-setInterval(healthCheck, 10 * 1000).unref();
-healthCheck();
 
- 
+function refreshHealthCheck() {
+  if (!healthCheckPromise) {
+    healthCheckPromise = healthCheck().finally(() => { healthCheckPromise = null; });
+  }
+  return healthCheckPromise;
+}
+
+setInterval(() => { void refreshHealthCheck(); }, 10 * 1000).unref();
+void refreshHealthCheck();
+
 function getRPCNode() {
-  
-  for (const n of allNodes) {
-    if (n.active === true) {
-      return {
-        rpc: n.rpc,
-        name: n.name,
-      };
-    }
-  }
-  //We did not find any active node so we return the first
-  return {
-    name: allNodes[0].name,
-    rpc: allNodes[0].rpc,
-  };
-}
-function getNodes() {
-  const list = [];
-  for (const n of allNodes) {
-    list.push({
-      active: n.active,
-      bestblockhash: n.bestblockhash,
-      name: n.name,
-    });
-  }
-  return list;
+  return allNodes.find((node) => node.active) || null;
 }
 
-module.exports = { getRPCNode, getNodes };
+async function getHealthyRPCNode() {
+  let node = getRPCNode();
+  if (node) return node;
+  await refreshHealthCheck();
+  node = getRPCNode();
+  if (!node) throw new Error("No RPC node matches config.expected_genesis and passes health checks");
+  return node;
+}
+
+function getNodes() {
+  return allNodes.map((node) => ({
+    active: node.active,
+    bestblockhash: node.bestblockhash,
+    healthError: node.healthError,
+    name: node.name,
+  }));
+}
+
+module.exports = { getRPCNode, getHealthyRPCNode, getNodes, refreshHealthCheck };

@@ -48,6 +48,7 @@ beforeAll(async () => {
   nodeResponses = {
     // Every /rpc call is preceded by a getbestblockhash to drive cache invalidation
     getbestblockhash: { status: 200, body: { result: "aaaa", error: null } },
+    getblockhash: { status: 200, body: { result: "0000008b384aeffecdab182575dc4e86c9f07f90318c65088532660ed9a8a021", error: null } },
   };
 
   const nodePort = await startFakeNode();
@@ -58,6 +59,7 @@ beforeAll(async () => {
     concurrency: 4,
     endpoint: "http://rpc-proxy:19999/rpc",
     environment: "integration test",
+    expected_genesis: "0000008b384aeffecdab182575dc4e86c9f07f90318c65088532660ed9a8a021",
     heading: "integration test",
     local_port: 0,
     nodes: [
@@ -97,6 +99,22 @@ describe("GET /settings", () => {
     expect(response.status).toBe(200);
     expect((await response.json()).endpoint).toBe(`${proxyUrl}/rpc`);
   });
+});
+
+test("rejects a node from the previous testnet before serving RPC", async () => {
+  const { refreshHealthCheck } = require("./getRPCNode");
+  const valid = nodeResponses.getblockhash;
+  await refreshHealthCheck();
+  try {
+    nodeResponses.getblockhash = { status: 200, body: { result: "0000009697907b2aa409d4b1f10da0fa14f5a52a2e31faf3886c0444b3c85e84", error: null } };
+    await refreshHealthCheck();
+    const response = await post("/rpc", { method: "getrawmempool", params: [] });
+    expect(response.status).toBe(503);
+    expect((await response.json()).error).toMatch(/No healthy RPC node/);
+  } finally {
+    nodeResponses.getblockhash = valid;
+    await refreshHealthCheck();
+  }
 });
 
 describe("POST /rpc error handling", () => {

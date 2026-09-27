@@ -1,6 +1,6 @@
 const { parseRequestJson } = require("./rpcJson");
 const { methods } = require("@neuraiproject/neurai-rpc");
-const { getRPCNode, getNodes } = require("./getRPCNode");
+const { getHealthyRPCNode, getNodes } = require("./getRPCNode");
 const { default: PQueue } = require("p-queue"); //NOTE version 6 with support for CommonJS
 const process = require("process"); //to get memory used
 const cacheService = require("./cacheService");
@@ -41,6 +41,8 @@ therefor we store a promise to get best block hash, and that promise is blanked 
 
 let lastBestBlockHash = null;
 let bestBlockHashPromise = null;
+let bestBlockHashPromiseNode = null;
+let lastCacheNodeName = null;
 //unref so this timer alone never keeps the process alive
 setInterval(() => {
   bestBlockHashPromise = null;
@@ -145,7 +147,7 @@ app.get("/rpc", (req, res) => {
             "Please use the HTTP POST method to proceed. For more details, refer to our documentation.",
         });
 });
-async function addToQueue(request, response) {
+async function addToQueue(request, response, node) {
   async function work() {
     /*
                 First off, already cached operations should NOT be queued, they should return immediately
@@ -158,7 +160,7 @@ async function addToQueue(request, response) {
     cacheService.addMethod(method, new Date());
     let promise = null;
 
-    const shouldCache = cacheService.shouldCache(method);
+    const shouldCache = config.nodes.length === 1 && cacheService.shouldCache(method);
 
     if (shouldCache === true) {
       promise = cacheService.get(method, params);
@@ -181,10 +183,7 @@ async function addToQueue(request, response) {
         promise = cacheService.get(method, params);
 
         if (!promise) {
-          const node = getRPCNode();
-          const rpc = node.rpc;
-
-          promise = rpc(method, params);
+          promise = node.rpc(method, params);
 
           //If promise fails, remove it from cache
           promise.catch((e) => {
@@ -196,9 +195,7 @@ async function addToQueue(request, response) {
       }
       //Should NOT cache
       else {
-        const node = getRPCNode();
-        const rpc = node.rpc;
-        promise = rpc(method, params);
+        promise = node.rpc(method, params);
       }
       // Return the HANDLED chain, not the raw promise. Returning `promise` here
       // leaked the rejection into p-queue, where nothing awaited it, so every
@@ -294,32 +291,31 @@ app.post("/rpc", async (req, res) => {
       }
     }
 
-    let p = bestBlockHashPromise; //need a reference if bestBlockHashPromise is set to null by interval
-    if (!p) {
-      const node = getRPCNode();
-      const rpc = node.rpc;
-      p = rpc(methods.getbestblockhash, []);
-
+    const node = await getHealthyRPCNode();
+    let p = bestBlockHashPromise;
+    if (!p || bestBlockHashPromiseNode !== node.name) {
+      p = node.rpc(methods.getbestblockhash, []);
       bestBlockHashPromise = p;
+      bestBlockHashPromiseNode = node.name;
     }
 
-    //Clear cache if new best block hash
+    // Keep cached responses tied to one node and one chain tip.
     const bestBlockHash = await p;
-    if (bestBlockHash !== lastBestBlockHash) {
+    if (bestBlockHash !== lastBestBlockHash || node.name !== lastCacheNodeName) {
       cacheService.clear();
       lastBestBlockHash = bestBlockHash;
+      lastCacheNodeName = node.name;
     }
 
-    //Add RCP call to queue
-    addToQueue(req, res).catch((e) => {
+    addToQueue(req, res, node).catch((e) => {
       console.log("Something went wrong", e);
       if (!res.headersSent) res.status(500).send({ error: "RPC request failed" });
     });
   } catch (e) {
     console.log("ERROR", e);
     console.dir(e);
-    res.status(500).send({
-      error: "Something went wrong, check your arguments",
+    res.status(503).send({
+      error: "No healthy RPC node available",
     });
   }
 });

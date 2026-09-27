@@ -6,6 +6,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # branch. The testnet compose overrides it with DePIN-Test; mainnet does not
 # build at all, it pulls neuraiproject/neurai-node from Docker Hub.
 ARG BRANCH=1.0.6
+ARG SOURCE_COMMIT=
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     autoconf \
@@ -48,7 +49,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /root
 
 RUN git clone --branch ${BRANCH} --single-branch \
-    https://github.com/NeuraiProject/Neurai.git
+    https://github.com/NeuraiProject/Neurai.git \
+ && if [ -n "${SOURCE_COMMIT}" ]; then git -C Neurai checkout --detach "${SOURCE_COMMIT}"; fi
 
 WORKDIR /root/Neurai/depends
 

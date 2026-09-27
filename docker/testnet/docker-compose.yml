@@ -8,6 +8,7 @@ services:
       args:
         # Testnet deliberately uses the branch that implements DePIN messaging.
         BRANCH: DePIN-Test
+        SOURCE_COMMIT: "${NODE_SOURCE_COMMIT:-0fe5a74943210508ec3be34c78e0f9192b7fefec}"
     restart: unless-stopped
 
     logging:
@@ -93,6 +94,7 @@ services:
       PROXY_PORT: "${PROXY_PORT:-19222}"
       PROXY_CONCURRENCY: "4"
       PROXY_ENVIRONMENT: "Neurai Testnet"
+      NEURAI_EXPECTED_GENESIS: "0000008b384aeffecdab182575dc4e86c9f07f90318c65088532660ed9a8a021"
       PROXY_HEADING: "Neurai RPC Proxy (testnet)"
       # Public URL shown on the web page and returned by GET /settings. From
       # .env; empty = derive it from the request host.

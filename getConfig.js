@@ -11,6 +11,7 @@ function getConfig() {
         "concurrency": 4,
         "endpoint": "https://rpc-main.neurai.org/rpc",
         "environment": "Neurai",
+        "expected_genesis": "00000044d33c0c0ba019be5c0249730424a69cb4c222153322f68c6104484806",
         "local_port": 19999,
         "nodes": [
           {

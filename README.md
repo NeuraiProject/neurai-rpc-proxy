@@ -37,7 +37,7 @@ web page walks through the sequence (discover → authenticate → read → publ
 
 The Docker deployments intentionally differ: mainnet pulls the official
 `neuraiproject/neurai-node:v1.0.6` image, which has no DePIN messaging implementation,
-while testnet builds the `DePIN-Test` branch and enables it. That branch serves DePIN **protocol 2** on the node's RPC port
+while testnet builds the `DePIN-Test` branch at the configured `NODE_SOURCE_COMMIT` and enables it. That branch serves DePIN **protocol 2** on the node's RPC port
 only; there is no separate gateway port any more.
 
 Protocol 2 in one paragraph: a holder signs a timestamped request with its own key
@@ -190,7 +190,22 @@ default in the compose file, so a stack also starts without a `.env`.
   `up -d`, so keep both in step. The node runs as the unprivileged user `neurai`
   (uid 999); the RPC and ZMQ ports stay inside the compose network.
 - **testnet** builds the `DePIN-Test` branch with `docker/node/Dockerfile` and the
-  env-driven `entrypoint.sh` next to it; see the DePIN section above.
+  env-driven `entrypoint.sh` next to it; see the DePIN section above. Set
+  `NODE_SOURCE_COMMIT` to the audited node commit and rebuild the image when
+  the node source changes. The current default is `0fe5a74943210508ec3be34c78e0f9192b7fefec`.
+
+**Reset testnet deployment:** use a fresh node data volume. The previous
+testnet data directory has a different genesis and cannot be reused by
+reindexing. Back up the old volume first. If the DePIN pool identity must stay
+the same, restore the dedicated wallet and rescan it on the new chain; verify
+the resulting `depingetmsginfo.depinpoolpkey` against the existing client pin.
+Do not copy `depinpool.dat` into the new volume, since it contains messages
+from the previous chain. Rebuild the node image with the intended
+`NODE_SOURCE_COMMIT`, then check `getblockhash 0` and `getnetworkinfo`
+directly on the node before routing traffic. The testnet proxy expects genesis
+`0000008b384aeffecdab182575dc4e86c9f07f90318c65088532660ed9a8a021`;
+it answers 503 if no configured node matches. The proxy does not expose
+`getnetworkinfo` publicly.
 
 **Upgrading a mainnet node from the v1.0.5 image:** its data directory was
 `/data/node`; v1.0.6 uses `/data` and the volume keeps the old layout, so without a
@@ -216,6 +231,7 @@ Configure your setup in ./config.json
     "concurrency": 4,
     "endpoint": "https://rpc-main.neurai.org/rpc",
     "environment": "Neurai",
+    "expected_genesis": "00000044d33c0c0ba019be5c0249730424a69cb4c222153322f68c6104484806",
     "local_port": 19999,
     "nodes": [
       {
@@ -232,6 +248,8 @@ Configure your setup in ./config.json
 - `concurrency` - Number of concurrent requests to handle
 - `endpoint` - Public endpoint URL (displayed in UI)
 - `environment` - Environment name (displayed in UI)
+- `expected_genesis` - Required 64-character genesis block hash; only healthy nodes
+  on this chain serve requests. Use the reset testnet hash shown above for testnet.
 - `local_port` - Port for the proxy server
 - `nodes` - Array of Neurai nodes for failover
   (`depin_enabled` / `depin_url` from 1.1.x are obsolete and ignored — DePIN goes through `neurai_url`)
@@ -531,7 +549,7 @@ walletpassphrasechange "oldpassphrase" "newpassphrase"
 
 ## Exact numeric transport (1.2.1)
 
-The proxy requires neurai-rpc >= 0.6.1. It preserves large integers and exact
+The proxy now requires neurai-rpc >= 0.7.0. It preserves large integers and exact
 fractional amounts from the node. Safe values remain JSON numbers; unsafe
 values are returned as decimal strings, including nested XNA and asset fields
 and cached results. Clients must keep these strings or use bigint for raw

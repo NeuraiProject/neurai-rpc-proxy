@@ -90,6 +90,7 @@ services:
       PROXY_PORT: "${PROXY_PORT:-19010}"
       PROXY_CONCURRENCY: "4"
       PROXY_ENVIRONMENT: "Neurai"
+      NEURAI_EXPECTED_GENESIS: "00000044d33c0c0ba019be5c0249730424a69cb4c222153322f68c6104484806"
       PROXY_HEADING: "Neurai RPC Proxy (mainnet)"
       # Public URL shown on the web page and returned by GET /settings. From
       # .env; empty = derive it from the request host.
