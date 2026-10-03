@@ -171,6 +171,20 @@ describe("POST /rpc error handling", () => {
     expect(await response.json()).toEqual({ result: 12345 });
   });
 
+  test("getnetworkinfo forwards the C6 recovery relay fee without caching", async () => {
+    const before = fakeNodeRequests.filter(r => r.method === "getnetworkinfo").length;
+    for (const relayfee of [0.01, 0.02]) {
+      nodeResponses.getnetworkinfo = {
+        status: 200,
+        body: { result: { version: 200000, relayfee }, error: null },
+      };
+      const response = await post("/rpc", { method: "getnetworkinfo", params: [] });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ result: { version: 200000, relayfee } });
+    }
+    expect(fakeNodeRequests.filter(r => r.method === "getnetworkinfo")).toHaveLength(before + 2);
+  });
+
   test("a non-whitelisted method is rejected without touching the node", async () => {
     const before = fakeNodeRequests.filter((r) => r.method === "depinsendmsg").length;
 

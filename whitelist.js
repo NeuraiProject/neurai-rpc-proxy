@@ -90,7 +90,7 @@ const whitelist = [
   //"getaddednodeinfo",
   //"getconnectioncount",
   //"getnettotals",
-  //"getnetworkinfo",
+  "getnetworkinfo", // Read-only relayfee used by C6 sponsor recovery.
   //"getpeerinfo",
   //"listbanned",
   //"ping",

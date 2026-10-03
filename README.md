@@ -204,8 +204,12 @@ from the previous chain. Rebuild the node image with the intended
 `NODE_SOURCE_COMMIT`, then check `getblockhash 0` and `getnetworkinfo`
 directly on the node before routing traffic. The testnet proxy expects genesis
 `0000008b384aeffecdab182575dc4e86c9f07f90318c65088532660ed9a8a021`;
-it answers 503 if no configured node matches. The proxy does not expose
-`getnetworkinfo` publicly.
+it answers 503 if no configured node matches. The proxy exposes the read-only
+`getnetworkinfo` method so C6 wallets can obtain the node's `relayfee` for sponsor
+recovery; this method is not cached. C6 additionally requires the node to report
+`getblockchaininfo.zk_portable_tree.active_for_next_block = true`. Reset testnet
+activates C6 at block 100; deploy a node revision that includes this schedule.
+Mining and network-management RPC methods remain outside the public whitelist.
 
 **Upgrading a mainnet node from the v1.0.5 image:** its data directory was
 `/data/node`; v1.0.6 uses `/data` and the volume keeps the old layout, so without a
