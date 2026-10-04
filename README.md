@@ -209,7 +209,7 @@ it answers 503 if no configured node matches. The proxy exposes the read-only
 recovery; this method is not cached. C6 additionally requires the node to report
 `getblockchaininfo.zk_portable_tree.active_for_next_block = true`. Reset testnet
 activates C6 at block 100; deploy a node revision that includes this schedule.
-Mining and network-management RPC methods remain outside the public whitelist.
+Mining control and network-management RPC methods remain outside the public whitelist.
 
 **Upgrading a mainnet node from the v1.0.5 image:** its data directory was
 `/data/node`; v1.0.6 uses `/data` and the volume keeps the old layout, so without a
