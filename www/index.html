@@ -352,7 +352,7 @@
             </div>
             <div>
               <h3>Membership is soulbound</h3>
-              <p>A holder cannot transfer a DePIN token; only the owner token issues, freezes or revokes. Losing the token means losing access, instantly, without anyone having to revoke a key.</p>
+              <p>A holder cannot transfer a DePIN token; only the owner token issues, freezes or revokes. Once a confirmed revocation is visible to authorization, the node denies further delivery. Copies or content keys already downloaded remain with their holder.</p>
             </div>
             <div>
               <h3>Content is encrypted per recipient</h3>
@@ -367,8 +367,8 @@
 
         <div class="steps four">
           <article class="step"><span class="step-number">01</span><h3>Discover</h3><p>Read the pool identity and its section names. Public, unauthenticated, signed by the node.</p><code class="method">depingetmsginfo · depinlistsections</code></article>
-          <article class="step"><span class="step-number">02</span><h3>Prove the address</h3><p>Sign a timestamped request with your own key and receive a single-use nonce, encrypted so only you can read it. Sign the nonce.</p><code class="method">depinchallenge</code></article>
-          <article class="step"><span class="step-number">03</span><h3>Read your branch</h3><p>Nonce + signature unlock the messages of a section and its children. Each reply chains the next nonce, so one proof serves a whole session.</p><code class="method">depinreceivemsg</code></article>
+          <article class="step"><span class="step-number">02</span><h3>Prove the address</h3><p>Sign a timestamped request with your own key and receive a single-use nonce, encrypted so only you can read it. Sign the complete next request, including its nonce, method, arguments and current membership revision.</p><code class="method">depinchallenge</code></article>
+          <article class="step"><span class="step-number">03</span><h3>Read your branch</h3><p>Nonce + signature unlock the messages of a section and its children. Each reply chains the next nonce, and a membership change invalidates old nonces.</p><code class="method">depinreceiveseq</code></article>
           <article class="step"><span class="step-number">04</span><h3>Publish</h3><p>Resolve the recipients up to the pool root, encrypt and sign locally, wrap the result for the pool key and hand it in. The node checks, stores, and never reads it.</p><code class="method">depingetancestorrecipients · depinsubmitmsg</code></article>
         </div>
 
@@ -384,7 +384,7 @@
               <li><span class="trust-icon">✍️</span><span><b>The node</b> holds the pool key: it opens submission envelopes, enforces access from chain state and signs every reply.</span></li>
               <li><span class="trust-icon">🛡️</span><span><b>This proxy</b> whitelists the <code>depin*</code> methods and rate-limits them per origin IP. It sees neither keys nor plaintext.</span></li>
             </ul>
-            <p class="note">Client-side cryptography (signmessage-compatible signatures, ECIES) is implemented in <a href="https://github.com/NeuraiProject/DePIN-Messaging" target="_blank" rel="noreferrer">DePIN-Messaging</a>; the byte-exact contract lives in the node repository (<code>doc/depin-messaging-protocol.md</code>).</p>
+            <p class="note">Client-side cryptography (signmessage-compatible signatures, ECIES) is implemented in <a href="https://github.com/NeuraiProject/neurai-depin-msg" target="_blank" rel="noreferrer">neurai-depin-msg 4.x</a>; the byte-exact contract lives in the node repository (<code>doc/depin-request-signatures.md</code>).</p>
           </article>
         </div>
       </section>

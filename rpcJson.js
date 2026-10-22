@@ -1,13 +1,18 @@
-const { parse } = require("lossless-json");
-const { parseRpcJson, rpcNumber } = require("@neuraiproject/neurai-rpc");
-
-// Preserve the distinction between JSON numbers and strings. Unsafe numeric
-// parameters must reach the node as exact JSON numbers, not quoted strings.
-function parseRequestJson(text) {
-  return parse(text, undefined, token => {
-    const value = parseRpcJson(token);
-    return typeof value === "string" ? rpcNumber(token) : value;
-  });
+const { parse, LosslessNumber } = require('lossless-json');
+const { parseRpcJson, isDepinRemoteMethod, assertNoDuplicateJsonKeys } = require('@neuraiproject/neurai-rpc');
+function rejectNumericImpersonation(_key, value) {
+  if (value && typeof value === 'object' && value.isLosslessNumber === true && !(value instanceof LosslessNumber))
+    throw new TypeError('Invalid numeric object');
+  return value;
 }
-
+// Ordinary RPC compatibility keeps safe numbers. Signed DePIN requests also
+// preserve lexical integer tokens so a relay cannot normalize invalid input.
+function parseRequestJson(text) {
+  assertNoDuplicateJsonKeys(text);
+  const value = parse(text, rejectNumericImpersonation, (token) => {
+    const numeric = parseRpcJson(token);
+    return typeof numeric === 'string' ? new LosslessNumber(token) : numeric;
+  });
+  return isDepinRemoteMethod(value?.method) ? parse(text, rejectNumericImpersonation) : value;
+}
 module.exports = { parseRequestJson };

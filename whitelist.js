@@ -1,20 +1,20 @@
 const whitelist = [
   //== Addressindex ==
-  "getaddressbalance",
-  "getaddressdeltas",
-  "getaddressmempool",
-  "getaddresstxids",
-  "getaddressutxos",
+  'getaddressbalance',
+  'getaddressdeltas',
+  'getaddressmempool',
+  'getaddresstxids',
+  'getaddressutxos',
 
   //== Assets ==
-  "getassetdata",
+  'getassetdata',
   // "getcacheinfo",
   //"getsnapshot",
   //"issue",
   //"issueunique",
-  "listaddressesbyasset",
-  "listassetbalancesbyaddress",
-  "listassets",
+  'listaddressesbyasset',
+  'listassetbalancesbyaddress',
+  'listassets',
   //"listmyassets",
   //"purgesnapshot",
   //"reissue",
@@ -24,27 +24,27 @@ const whitelist = [
 
   //== Blockchain ==
   //"clearmempool",
-  "decodeblock",
-  "getbestblockhash",
-  "getblock",
-  "getblockchaininfo",
-  "getblockcount",
+  'decodeblock',
+  'getbestblockhash',
+  'getblock',
+  'getblockchaininfo',
+  'getblockcount',
   //"getblockdeltas",
-  "getblockhash",
+  'getblockhash',
   // "getblockhashes", //This can kill the service if you ask for all block hashes years back
-  "getblockheader",
-  "getchaintips",
-  "getchaintxstats",
-  "getdifficulty",
+  'getblockheader',
+  'getchaintips',
+  'getchaintxstats',
+  'getdifficulty',
   //"getibdstatus", // node diagnostics (header-sync timing per peer), like the Network section
-  "getmempoolancestors",
-  "getmempooldescendants",
-  "getmempoolentry",
-  "getmempoolinfo",
-  "getrawmempool",
-  "getspentinfo",
-  "gettxout",
-  "gettxoutproof",
+  'getmempoolancestors',
+  'getmempooldescendants',
+  'getmempoolentry',
+  'getmempoolinfo',
+  'getrawmempool',
+  'getspentinfo',
+  'gettxout',
+  'gettxoutproof',
   // "gettxoutsetinfo", this method is not "dangerous" but it takes TOO long time
   //"preciousblock",
   //"pruneblockchain",
@@ -56,7 +56,7 @@ const whitelist = [
   //"getinfo",
   //"getmemoryinfo",
   //"getrpcinfo",
-  "help",
+  'help',
   //"stop",
   //"uptime",
 
@@ -78,7 +78,7 @@ const whitelist = [
   // "getblocktemplate",
   //"getkawpowhash",
   //"getmininginfo",
-  "getnetworkhashps",
+  'getnetworkhashps',
   //"pprpcsb",
   //"prioritisetransaction",
   //"submitblock",
@@ -90,7 +90,7 @@ const whitelist = [
   //"getaddednodeinfo",
   //"getconnectioncount",
   //"getnettotals",
-  "getnetworkinfo", // Read-only relayfee used by C6 sponsor recovery.
+  'getnetworkinfo', // Read-only relayfee used by C6 sponsor recovery.
   //"getpeerinfo",
   //"listbanned",
   //"ping",
@@ -98,31 +98,31 @@ const whitelist = [
   //"setnetworkactive",
 
   //== Rawtransactions ==
-  "combinerawtransaction",
-  "createrawtransaction",
-  "decoderawtransaction",
-  "decodescript",
+  'combinerawtransaction',
+  'createrawtransaction',
+  'decoderawtransaction',
+  'decodescript',
   //"fundrawtransaction",
-  "getrawtransaction",
-  "sendrawtransaction",
-  "signrawtransaction",
-  "testmempoolaccept",
+  'getrawtransaction',
+  'sendrawtransaction',
+  'signrawtransaction',
+  'testmempoolaccept',
 
   //== Restricted assets ==
   // "addtagtoaddress",
-  "checkaddressrestriction",
-  "checkaddresstag",
-  "checkglobalrestriction",
+  'checkaddressrestriction',
+  'checkaddresstag',
+  'checkglobalrestriction',
   //"freezeaddress",
   //"freezerestrictedasset",
-  "getverifierstring",
+  'getverifierstring',
   //"issuequalifierasset",
   //"issuerestrictedasset",
-  "isvalidverifierstring",
-  "listaddressesfortag",
-  "listaddressrestrictions",
-  "listglobalrestrictions",
-  "listtagsforaddress",
+  'isvalidverifierstring',
+  'listaddressesfortag',
+  'listaddressrestrictions',
+  'listglobalrestrictions',
+  'listtagsforaddress',
   //"reissuerestrictedasset",
   //"removetagfromaddress",
   //"transferqualifier",
@@ -148,23 +148,23 @@ const whitelist = [
 
   //== Util ==
   //"createmultisig",
-  "estimatefee",
-  "estimatesmartfee",
-  "signmessagewithprivkey",
-  "validateaddress",
-  "verifymessage",
+  'estimatefee',
+  'estimatesmartfee',
+  'signmessagewithprivkey',
+  'validateaddress',
+  'verifymessage',
 
   //== Depin asset ==
   // Methods below are chain queries: they work with disablewallet=1.
   // Anything that needs keys in the node's wallet stays out — see the block at
   // the end of this section.
-  "getpubkey",
-  "checkdepinvalidity",
+  'getpubkey',
+  'checkdepinvalidity',
   //"closedepin",  // transfer state (open/close/seal): owner-only wallet writes
   //"freezedepin",
-  "depingetancestorrecipients",
-  "listdepinholders",
-  "listdepinaddresses",
+  'depingetancestorrecipients',
+  'listdepinholders',
+  'listdepinaddresses',
   //"opendepin",
   //"sealdepin",
   //"selfrevokedepin",
@@ -176,14 +176,15 @@ const whitelist = [
   // timestamp, single-use); replies are encrypted for the holder and signed
   // with the node's pool key. Nothing here needs node credentials beyond the
   // proxy's, and nothing here is cacheable.
-  "depinchallenge",
-  "depinclearmsg",     // owner-level, challenge-authenticated
-  "depinreceivemsg",
-  "depinlistsections",
-  "depingetmsginfo",   // publishes the pool key (clients pin it on first use)
-  "depinmcpstatus",
-  "depinpoolstats",
-  "depinsubmitmsg",    // Write, but non-custodial: the client encrypts, signs and wraps for the pool key
+  'depinchallenge',
+  'depinclearmsg', // owner-level, challenge-authenticated
+  'depinreceivemsg',
+  'depinreceiveseq',
+  'depinlistsections',
+  'depingetmsginfo', // publishes the pool key (clients pin it on first use)
+  'depinmcpstatus',
+  'depinpoolstats',
+  'depinsubmitmsg', // Write, but non-custodial: the client encrypts, signs and wraps for the pool key
   // depingetpoolcontent no longer exists in the node (pool-wide metadata with
   // no identity to bind a challenge to).
 

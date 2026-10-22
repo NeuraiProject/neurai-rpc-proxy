@@ -1,15 +1,15 @@
-const NeuraiRPC = require("@neuraiproject/neurai-rpc");
-const getConfig = require("./getConfig");
+const NeuraiRPC = require('@neuraiproject/neurai-rpc');
+const getConfig = require('./getConfig');
 
 const config = getConfig();
 const expectedGenesis = config.expected_genesis;
-if (typeof expectedGenesis !== "string" || !/^[0-9a-f]{64}$/i.test(expectedGenesis)) {
-  throw new Error("config.expected_genesis must be a 64-character block hash");
+if (typeof expectedGenesis !== 'string' || !/^[0-9a-f]{64}$/i.test(expectedGenesis)) {
+  throw new Error('config.expected_genesis must be a 64-character block hash');
 }
 
 for (const node of config.nodes) {
   if (node.depin_enabled !== undefined || node.depin_url !== undefined) {
-    console.warn("depin_enabled and depin_url are obsolete and ignored");
+    console.warn('depin_enabled and depin_url are obsolete and ignored');
   }
 }
 
@@ -25,31 +25,45 @@ let healthCheckPromise = null;
 async function healthCheck() {
   for (const node of allNodes) {
     try {
-      const genesis = await node.rpc("getblockhash", [0]);
-      if (typeof genesis !== "string" || genesis.toLowerCase() !== expectedGenesis.toLowerCase()) {
+      const genesis = await node.rpc('getblockhash', [0]);
+      if (typeof genesis !== 'string' || genesis.toLowerCase() !== expectedGenesis.toLowerCase()) {
         node.active = false;
-        node.healthError = "Unexpected genesis block";
+        node.healthError = 'Unexpected genesis block';
         continue;
       }
-      node.bestblockhash = await node.rpc("getbestblockhash", []);
+      node.bestblockhash = await node.rpc('getbestblockhash', []);
       node.active = true;
       node.healthError = undefined;
     } catch (error) {
       node.active = false;
-      node.healthError = "RPC health check failed";
+      node.healthError = 'RPC health check failed';
     }
   }
 }
 
 function refreshHealthCheck() {
   if (!healthCheckPromise) {
-    healthCheckPromise = healthCheck().finally(() => { healthCheckPromise = null; });
+    healthCheckPromise = healthCheck().finally(() => {
+      healthCheckPromise = null;
+    });
   }
   return healthCheckPromise;
 }
 
-setInterval(() => { void refreshHealthCheck(); }, 10 * 1000).unref();
+setInterval(() => {
+  void refreshHealthCheck();
+}, 10 * 1000).unref();
 void refreshHealthCheck();
+
+const routeDepin = NeuraiRPC.createDepinNodeRouter(
+  () => allNodes.filter((node) => node.active),
+  () => require('crypto').randomBytes(32).toString('hex'),
+);
+async function getRPCNodeForRequest(method, params) {
+  if (!NeuraiRPC.isDepinRemoteMethod(method)) return getRPCNode();
+  if (!allNodes.some((node) => node.active)) await refreshHealthCheck();
+  return routeDepin(method, params);
+}
 
 function getRPCNode() {
   return allNodes.find((node) => node.active) || null;
@@ -60,7 +74,7 @@ async function getHealthyRPCNode() {
   if (node) return node;
   await refreshHealthCheck();
   node = getRPCNode();
-  if (!node) throw new Error("No RPC node matches config.expected_genesis and passes health checks");
+  if (!node) throw new Error('No RPC node matches config.expected_genesis and passes health checks');
   return node;
 }
 
@@ -73,4 +87,4 @@ function getNodes() {
   }));
 }
 
-module.exports = { getRPCNode, getHealthyRPCNode, getNodes, refreshHealthCheck };
+module.exports = { getRPCNodeForRequest, getRPCNode, getHealthyRPCNode, getNodes, refreshHealthCheck };

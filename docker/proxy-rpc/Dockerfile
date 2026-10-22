@@ -17,6 +17,7 @@ WORKDIR /app
 # Install production dependencies first for better layer caching. Requires
 # package-lock.json to be in sync with package.json (npm ci is strict).
 COPY package.json package-lock.json ./
+COPY vendor/ ./vendor/
 RUN npm ci --omit=dev && npm cache clean --force
 
 # Application source. .dockerignore keeps out node_modules, .git, config.json

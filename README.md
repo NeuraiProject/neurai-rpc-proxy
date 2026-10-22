@@ -21,60 +21,23 @@ Check out this software live at:
 - **Whitelist Protection** - Only allow an explicitly approved set of methods. Mostly reads, plus a few writes that carry their own proof (`sendrawtransaction`, `depinsubmitmsg`, `depinclearmsg`); anything needing the node's wallet or private keys stays out
 - **Multi-Node Support** - Automatic failover between multiple Neurai nodes
 
-## DePIN
+## DePIN RPC 5
 
-The proxy only connects to the node's standard HTTP RPC endpoint; the whitelisted
-`depin*` methods go through `/rpc` like any other method. There is no DePIN-specific
-URL or port.
+The proxy forwards the ten public messaging methods on the node's standard HTTP RPC port. Every call uses one complete request object, including bootstrap; old positional messaging arguments and RPC 2/3/4 are rejected. `depinreceiveseq` provides admission-sequence pagination. Client signing, ECIES opening and reply verification belong in `neurai-depin-msg` 4.x.
 
-**Sections are sub-assets.** The node serves one pool root (`&NEWS`); its sub-assets
-are sections (`&NEWS/GENERAL`, `&NEWS/GENERAL/SPORT`). Access is inherited downward,
-never upward: a holder of `&NEWS` reads everything, a holder of `&NEWS/GENERAL` reads
-that branch only. Holdings are soulbound, on-chain data, so any client can verify who
-takes part with `listdepinholders`, `checkdepinvalidity` and `getpubkey`. The proxy's
-web page walks through the sequence (discover → authenticate → read → publish) as
-`fetch` examples against the configured endpoint.
+Private requests sign the target genesis, pool key/root, instance, membership revision, method and arguments. With several healthy backends, the proxy discovers their pool identities and routes only to the exact destination. It never rewrites or broadcasts a private request and never automatically retries a write. A matching backend becoming unavailable requires a fresh bootstrap/recovery on the client, not arbitrary failover.
 
-The Docker deployments intentionally differ: mainnet pulls the official
-`neuraiproject/neurai-node:v1.0.6` image, which has no DePIN messaging implementation,
-while testnet builds the `DePIN-Test` branch at the configured `NODE_SOURCE_COMMIT` and enables it. That branch serves DePIN **protocol 2** on the node's RPC port
-only; there is no separate gateway port any more.
+Every reply remains the node's opaque signed wrapper. The client verifies its locally computed request hash, expected network, pinned pool and confidentiality kind before decoding or decrypting. Nothing request-bound is cached, including the public directory, bootstrap, sections and stats. Chain-only `checkdepinvalidity`, `listdepinholders`, `listdepinaddresses` and `getpubkey` keep their existing contracts.
 
-Protocol 2 in one paragraph: a holder signs a timestamped request with its own key
-and asks `depinchallenge` for a single-use nonce (the request is accepted once and
-only near the node's clock; the reply is encrypted for the holder's on-chain public
-key), signs the nonce, and passes nonce + signature to `depinreceivemsg`,
-`depinlistsections` or `depinclearmsg`. Every authenticated reply carries the next nonce inside its
-encrypted body, so a client that keeps reading calls `depinchallenge` once. Every
-reply carries `poolsig`, the node's pool-key signature; the client pins
-`depingetmsginfo.depinpoolpkey` on first use and verifies `poolsig` locally from then
-on — never by asking this proxy, which is exactly the party the scheme is designed
-not to trust. Publishing goes through `depinsubmitmsg` with the serialized message
-wrapped in an ECIES envelope for the pool key. Message content is encrypted per
-recipient and never readable by the node or the proxy. See `doc/depinreceivemsg.md`
-in the node repository for the full contract.
+Legacy and strict ECDSA identities are supported by the updated node, including mixed ECIES 2 messages. `depinsignrpc`, `depindecrypt`, `depinsendmsg`, `depingetmsg` and `depinpoolpkey` are local wallet helpers and are excluded from the whitelist. The removed signrequest/signchallenge helpers are not exposed either. PQ messaging and ESP32 firmware migration are separate work.
 
-The testnet node therefore runs **with a wallet** (`NEURAI_DISABLE_WALLET=0`): the pool
-key is derived from a dedicated, unencrypted, legacy BIP44 wallet that must never hold
-funds. No other bootstrap is needed: the node refuses to start the service without
-such a wallet, and the entrypoint refuses earlier, with the reason.
+Configure a node actually containing RPC 5; a historical image/source commit does not gain it merely by updating this proxy. The existing Docker definitions retain their configured source/image choices until the operator deliberately changes them. No deployment is performed by this client migration.
 
-Abuse control is split: the node limits challenges issued and messages accepted per
-**address** and minute (`depinratelimit`, `NEURAI_DEPIN_RATE_LIMIT`), counting only
-requests signed by that address — a forged request is refused before it touches
-anyone's quota — and this proxy
-limits `depin*` requests per **origin IP** and minute (`depin_rate_limit`, default 60)
-and blocks the IP for `depin_ban_minutes` (default 60) when it goes over, answering
-`429` with `Retry-After`. The node cannot see origin IPs behind the proxy, which is
-why the split exists. Set `trust_proxy` only when a trusted reverse proxy in front
-sets `X-Forwarded-For`; otherwise clients could choose their own identity.
+Abuse control remains per origin IP (`depin_rate_limit`, default 60/minute; `depin_ban_minutes`, default 60). HTTP 429 includes `Retry-After`. Configure `trust_proxy` only for a reverse proxy you operate. The node separately validates signatures, current permissions and per-address limits.
 
-**Upgrading from 1.1.x:** `depingetpoolcontent` is gone (the node no longer has it;
-pool-wide metadata has no identity to bind a challenge to), and `depinreceivemsg`,
-`depinlistsections` and `depinclearmsg` now require the challenge/signature pair
-described above. The per-node `depin_enabled` / `depin_url` keys in `config.json` are
-obsolete: the proxy logs a notice and ignores them.
+Signed request parameters use lossless JSON, preserving cursor integers beyond 2^53 and lexical numeric tokens. Duplicate keys and numeric-object impersonation are rejected. The proxy does not manufacture pool signatures or independently prove that a directory contains only asset holders. Applications can compare against an independent chain source before sending.
 
+See the sibling [RPC 5 integration guide](../neurai-rpc/DEPIN_IMPLEMENTATION_GUIDE_EN.md). While packages remain unpublished, the dependency is a reproducible tarball under `vendor/`; no npm publication is needed to test or install this checkout.
 
 ## How do I use this software?
 
@@ -293,7 +256,7 @@ rpcallowip=127.0.0.1
 dbcache=4096
 ```
 
-For the testnet `DePIN-Test` branch, set `depinmsg=1` and `depinmsgtoken`, keep the
+For an RPC 5 testnet node, set `depinmsg=1` and `depinmsgtoken`, keep the
 wallet enabled, and optionally tune `depinratelimit` (the compose file does this
 through environment variables). There is no DePIN port: the service is served on the RPC port
 the proxy already talks to. The stable `v1.0.6` mainnet node does not accept these
@@ -476,7 +439,7 @@ sealdepin "asset_name" ( "change_address" )
 selfrevokedepin
 unfreezedepin
 
-== Depin messaging (protocol 2, DePIN-Test branch only) ==
+== DePIN messaging (RPC 5; node catalog, not the public whitelist) ==
 depinchallenge
 depinclearmsg
 depingetmsg
@@ -486,9 +449,9 @@ depinmcpstatus
 depinpoolpkey
 depinpoolstats
 depinreceivemsg
+depinreceiveseq
 depinsendmsg
-depinsignchallenge
-depinsignrequest
+depinsignrpc  # LOCAL WALLET ONLY
 depindecrypt
 depinsubmitmsg
 
@@ -567,3 +530,7 @@ Cache keys preserve the distinction between numeric tokens and quoted strings.
 
 Rebuild/restart the deployed proxy to activate this update. Updating a client
 library alone cannot recover digits already rounded by an older proxy.
+
+## Coordinated checkout
+
+This checkout uses the RPC 5 package in `vendor/`, with integrity pinned in `package-lock.json`. Run `npm ci` before starting or testing. The Docker build copies the same archive before installing dependencies. These packages have not been published by this change; see `vendor/README.md` before replacing them with registry releases.

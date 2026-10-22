@@ -1,15 +1,15 @@
-const { parseRequestJson } = require("./rpcJson");
-const { methods } = require("@neuraiproject/neurai-rpc");
-const { getHealthyRPCNode, getNodes } = require("./getRPCNode");
-const { default: PQueue } = require("p-queue"); //NOTE version 6 with support for CommonJS
-const process = require("process"); //to get memory used
-const cacheService = require("./cacheService");
-const { getRPCErrorMessage } = require("./rpcError");
-const cors = require("cors");
-const express = require("express");
-const getConfig = require("./getConfig");
-const { whitelist, isWhitelisted } = require("./whitelist");
-const { createDepinLimiter } = require("./depinRateLimit");
+const { parseRequestJson } = require('./rpcJson');
+const { methods } = require('@neuraiproject/neurai-rpc');
+const { getHealthyRPCNode, getRPCNodeForRequest, getNodes } = require('./getRPCNode');
+const { default: PQueue } = require('p-queue'); //NOTE version 6 with support for CommonJS
+const process = require('process'); //to get memory used
+const cacheService = require('./cacheService');
+const { getRPCErrorMessage } = require('./rpcError');
+const cors = require('cors');
+const express = require('express');
+const getConfig = require('./getConfig');
+const { whitelist, isWhitelisted } = require('./whitelist');
+const { createDepinLimiter } = require('./depinRateLimit');
 
 let numberOfRequests = 0;
 
@@ -19,17 +19,17 @@ let numberOfRequests = 0;
 2) Most requests are cached for the lifespan of the CURRENT BLOCK
 
 */
-process.on("uncaughtException", (error, origin) => {
-  console.log("----- Uncaught exception -----");
+process.on('uncaughtException', (error, origin) => {
+  console.log('----- Uncaught exception -----');
   console.log(error);
-  console.log("----- Exception origin -----");
+  console.log('----- Exception origin -----');
   console.log(origin);
 });
 
-process.on("unhandledRejection", (reason, promise) => {
-  console.log("----- Unhandled Rejection at -----");
+process.on('unhandledRejection', (reason, promise) => {
+  console.log('----- Unhandled Rejection at -----');
   console.log(promise);
-  console.log("----- Reason -----");
+  console.log('----- Reason -----');
   console.log(reason);
 });
 
@@ -52,17 +52,17 @@ const app = express();
 app.use(cors());
 
 //Default size limit for request are too small, increase it
-app.use(express.text({ type: "application/json", limit: "2mb" }));
+app.use(express.text({ type: 'application/json', limit: '2mb' }));
 app.use((req, res, next) => {
-  if (typeof req.body !== "string") return next();
+  if (typeof req.body !== 'string') return next();
   try {
     req.body = parseRequestJson(req.body);
-    if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
-      return res.status(400).send({ error: "Expected a JSON-RPC request object" });
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).send({ error: 'Expected a JSON-RPC request object' });
     }
     next();
   } catch (_) {
-    return res.status(400).send({ error: "Invalid JSON request" });
+    return res.status(400).send({ error: 'Invalid JSON request' });
   }
 });
 
@@ -72,7 +72,7 @@ const config = getConfig();
 // X-Forwarded-For; only honour it when the operator says so, otherwise any
 // client could pick its own identity for the rate limiter.
 if (config.trust_proxy) {
-  app.set("trust proxy", config.trust_proxy);
+  app.set('trust proxy', config.trust_proxy);
 }
 
 // Per-IP limit and temporary ban for the depin* methods. The node limits per
@@ -88,15 +88,14 @@ const queue = new PQueue({ concurrency: config.concurrency || 1 });
 
 const port = config.local_port || process.env.PORT || 80;
 
+app.use(express.static('www'));
 
-app.use(express.static("www"));
-
-app.get("/whitelist", (req, res) => {
+app.get('/whitelist', (req, res) => {
   res.send(whitelist);
   return;
 });
 
-app.get("/getCache", (_, res) => {
+app.get('/getCache', (_, res) => {
   const obj = {};
 
   obj.numberOfItemsInCache = cacheService.getKeys().length;
@@ -113,25 +112,21 @@ app.get("/getCache", (_, res) => {
   obj.depinRateLimit = depinLimiter.stats();
   return res.send(obj);
 });
-app.get("/settings", (req, res) => {
+app.get('/settings', (req, res) => {
   // Expose public parts of config. A Docker deployment does not have to know
   // its public hostname: when endpoint is unset, derive a usable browser URL
   // instead of leaking the internal service name (for example rpc-proxy).
-  const configuredEndpoint =
-    typeof config.endpoint === "string" ? config.endpoint.trim() : "";
+  const configuredEndpoint = typeof config.endpoint === 'string' ? config.endpoint.trim() : '';
   let configuredEndpointIsInternal = false;
   try {
-    configuredEndpointIsInternal = ["rpc-proxy", "neuraid", "localhost", "127.0.0.1", "0.0.0.0"].includes(
-      new URL(configuredEndpoint).hostname
+    configuredEndpointIsInternal = ['rpc-proxy', 'neuraid', 'localhost', '127.0.0.1', '0.0.0.0'].includes(
+      new URL(configuredEndpoint).hostname,
     );
   } catch (_) {
     // An empty or malformed endpoint is handled by the public request URL.
     configuredEndpointIsInternal = true;
   }
-  const endpoint =
-    configuredEndpoint && !configuredEndpointIsInternal
-      ? configuredEndpoint
-      : `${req.protocol}://${req.get("host")}/rpc`;
+  const endpoint = configuredEndpoint && !configuredEndpointIsInternal ? configuredEndpoint : `${req.protocol}://${req.get('host')}/rpc`;
   const obj = {
     heading: config.heading,
     environment: config.environment,
@@ -140,12 +135,10 @@ app.get("/settings", (req, res) => {
   res.send(obj);
 });
 
-app.get("/rpc", (req, res) => {
-    res.status(405).set("Allow", "POST")
-        .send({
-            description:
-            "Please use the HTTP POST method to proceed. For more details, refer to our documentation.",
-        });
+app.get('/rpc', (req, res) => {
+  res.status(405).set('Allow', 'POST').send({
+    description: 'Please use the HTTP POST method to proceed. For more details, refer to our documentation.',
+  });
 });
 async function addToQueue(request, response, node) {
   async function work() {
@@ -188,7 +181,7 @@ async function addToQueue(request, response, node) {
           //If promise fails, remove it from cache
           promise.catch((e) => {
             cacheService.remove(method, params);
-            console.log("Removed", method, params, "from cache");
+            console.log('Removed', method, params, 'from cache');
           });
           cacheService.put(method, params, promise);
         }
@@ -218,8 +211,8 @@ async function addToQueue(request, response, node) {
               result: {
                 valid: false,
                 isDePinAsset: false,
-                message: 'Not a DePIN asset (assets must start with & to be DePIN assets)'
-              }
+                message: 'Not a DePIN asset (assets must start with & to be DePIN assets)',
+              },
             });
           }
           return response.status(500).send({
@@ -227,14 +220,14 @@ async function addToQueue(request, response, node) {
           });
         });
     } catch (e) {
-      console.log("Error!", e);
-      if (!response.headersSent) return response.status(500).send({ error: "RPC request failed" });
+      console.log('Error!', e);
+      if (!response.headersSent) return response.status(500).send({ error: 'RPC request failed' });
     }
   }
   //return it so the .catch() at the call site is real
   return queue.add(work);
 }
-app.post("/rpc", async (req, res) => {
+app.post('/rpc', async (req, res) => {
   try {
     //check whitelist
     const method = req.body.method;
@@ -248,50 +241,46 @@ app.post("/rpc", async (req, res) => {
     numberOfRequests++;
 
     if (inc === false) {
-      console.log("Not whitelisted", method);
+      console.log('Not whitelisted', method);
       return res.status(404).send({
-        error: "Not in whitelist",
-        description: "Method " + method + " is not supported",
+        error: 'Not in whitelist',
+        description: 'Method ' + method + ' is not supported',
       });
     }
 
     // DePIN abuse control by origin IP: over the limit, the IP is blocked for
     // a while and every depin* call answers 429 until it lapses.
-    if (typeof method === "string" && method.startsWith("depin")) {
+    if (typeof method === 'string' && method.startsWith('depin')) {
       const verdict = depinLimiter.check(req.ip, Date.now());
       if (!verdict.allowed) {
         if (verdict.justBanned) {
-          console.log("DePIN rate limit exceeded, banning", req.ip, "for", depinLimiter.stats().banMinutes, "minutes");
+          console.log('DePIN rate limit exceeded, banning', req.ip, 'for', depinLimiter.stats().banMinutes, 'minutes');
         }
-        res.set("Retry-After", String(verdict.retryAfterSeconds));
+        res.set('Retry-After', String(verdict.retryAfterSeconds));
         return res.status(429).send({
-          error: "Too many requests",
+          error: 'Too many requests',
           description:
-            "DePIN requests from this address are blocked for " +
+            'DePIN requests from this address are blocked for ' +
             verdict.retryAfterSeconds +
-            " seconds (limit: " +
+            ' seconds (limit: ' +
             depinLimiter.stats().perMinute +
-            " depin* requests per minute)",
+            ' depin* requests per minute)',
         });
       }
     }
     //Special case for listaddressesforassets
     //Seems to be a bug with listaddressesforassets with second param totalCount set to true
-    if (method === "listaddressesbyasset" && params && params.length >= 2) {
+    if (method === 'listaddressesbyasset' && params && params.length >= 2) {
       if (params[1] === true) {
         return res.status(404).send({
-          error: "Not in whitelist",
+          error: 'Not in whitelist',
           description:
-            "Method " +
-            method +
-            " with totalCount set to true is not whitelisted. Please use " +
-            method +
-            " without totalCount = true",
+            'Method ' + method + ' with totalCount set to true is not whitelisted. Please use ' + method + ' without totalCount = true',
         });
       }
     }
 
-    const node = await getHealthyRPCNode();
+    const node = (await getRPCNodeForRequest(method, params)) || (await getHealthyRPCNode());
     let p = bestBlockHashPromise;
     if (!p || bestBlockHashPromiseNode !== node.name) {
       p = node.rpc(methods.getbestblockhash, []);
@@ -308,14 +297,15 @@ app.post("/rpc", async (req, res) => {
     }
 
     addToQueue(req, res, node).catch((e) => {
-      console.log("Something went wrong", e);
-      if (!res.headersSent) res.status(500).send({ error: "RPC request failed" });
+      console.log('Something went wrong', e);
+      if (!res.headersSent) res.status(500).send({ error: 'RPC request failed' });
     });
   } catch (e) {
-    console.log("ERROR", e);
+    if (e.code === -8 || e.code === -32600) return res.status(400).send({ error: { code: e.code, message: e.message, data: e.data } });
+    console.log('ERROR', e);
     console.dir(e);
     res.status(503).send({
-      error: "No healthy RPC node available",
+      error: 'No healthy RPC node available',
     });
   }
 });
@@ -324,9 +314,7 @@ app.post("/rpc", async (req, res) => {
 // gives you the configured Express app without binding a port.
 if (require.main === module) {
   app.listen(port, () => {
-    console.log(
-      `RPC Proxy listening on path /rpc on port port ${port}, call me later`
-    );
+    console.log(`RPC Proxy listening on path /rpc on port port ${port}, call me later`);
   });
 }
 

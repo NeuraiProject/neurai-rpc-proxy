@@ -104,3 +104,7 @@ tmp
 
 # TernJS port file
 .tern-port
+
+# Unpublished RPC 5 packages used by this checkout.
+!vendor/
+!vendor/neuraiproject-neurai-rpc-0.8.0.tgz
