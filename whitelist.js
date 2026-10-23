@@ -43,6 +43,10 @@ const whitelist = [
   'getmempoolinfo',
   'getrawmempool',
   'getspentinfo',
+  // Privacy-pool state threads (the node needs -spentindex -txindex). Pages are
+  // bounded by the node: 1000 transitions and 1 MiB of raw transactions.
+  'getprivacypoolinfo',
+  'getprivacypoolupdates',
   'gettxout',
   'gettxoutproof',
   // "gettxoutsetinfo", this method is not "dangerous" but it takes TOO long time

@@ -15,3 +15,7 @@ test("getblockcount IS whitelisted", () => {
     const result = isWhitelisted("getblockcount");
     expect(result).toBe(true);
 });
+
+test.each(["getprivacypoolinfo", "getprivacypoolupdates"])("%s IS whitelisted (privacy-pool history)", (method) => {
+    expect(isWhitelisted(method)).toBe(true);
+});
