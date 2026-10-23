@@ -4,7 +4,7 @@
   "description": "Neurai Web API via safe proxy",
   "main": "index.js",
   "dependencies": {
-    "@neuraiproject/neurai-rpc": "file:vendor/neuraiproject-neurai-rpc-0.8.0.tgz",
+    "@neuraiproject/neurai-rpc": "0.8.0",
     "cors": "2.8.5",
     "express": "^4.21.2",
     "lossless-json": "^4.3.0",

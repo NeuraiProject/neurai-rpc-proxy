@@ -37,7 +37,7 @@ Abuse control remains per origin IP (`depin_rate_limit`, default 60/minute; `dep
 
 Signed request parameters use lossless JSON, preserving cursor integers beyond 2^53 and lexical numeric tokens. Duplicate keys and numeric-object impersonation are rejected. The proxy does not manufacture pool signatures or independently prove that a directory contains only asset holders. Applications can compare against an independent chain source before sending.
 
-See the sibling [RPC 5 integration guide](../neurai-rpc/DEPIN_IMPLEMENTATION_GUIDE_EN.md). While packages remain unpublished, the dependency is a reproducible tarball under `vendor/`; no npm publication is needed to test or install this checkout.
+See the sibling [RPC 5 integration guide](../neurai-rpc/DEPIN_IMPLEMENTATION_GUIDE_EN.md). The proxy installs the published `@neuraiproject/neurai-rpc@0.8.0` from npm, with integrity pinned in `package-lock.json`.
 
 ## How do I use this software?
 
@@ -531,6 +531,6 @@ Cache keys preserve the distinction between numeric tokens and quoted strings.
 Rebuild/restart the deployed proxy to activate this update. Updating a client
 library alone cannot recover digits already rounded by an older proxy.
 
-## Coordinated checkout
+## Published RPC 5 dependency
 
-This checkout uses the RPC 5 package in `vendor/`, with integrity pinned in `package-lock.json`. Run `npm ci` before starting or testing. The Docker build copies the same archive before installing dependencies. These packages have not been published by this change; see `vendor/README.md` before replacing them with registry releases.
+This checkout uses the published `@neuraiproject/neurai-rpc@0.8.0`. Run `npm ci` before starting or testing; `package-lock.json` pins the registry tarball and its SHA-512 integrity. Docker installs the same dependency from the lockfile. No local package archives are required.
