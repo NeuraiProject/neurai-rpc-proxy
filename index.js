@@ -9,7 +9,7 @@ const cors = require('cors');
 const express = require('express');
 const getConfig = require('./getConfig');
 const { whitelist, isWhitelisted } = require('./whitelist');
-const { createDepinLimiter } = require('./depinRateLimit');
+const { createDepinLimiter, createRateLimiter } = require('./depinRateLimit');
 
 let numberOfRequests = 0;
 
@@ -83,6 +83,41 @@ const depinLimiter = createDepinLimiter({
 });
 setInterval(() => depinLimiter.prune(Date.now()), 60 * 1000).unref();
 
+// Per-IP limit for the NIP-048 plan reads. The node keeps only a few plans per
+// tip, so each call with new plan parameters makes it compute a plan under
+// cs_main, reading every holder of the snapshot.
+const REWARD_PLAN_METHODS = new Set(['getdistributionplan', 'getdistributionproof']);
+const rewardPlanLimiter = createRateLimiter({
+  perMinute: config.reward_plan_rate_limit === undefined ? 20 : Number(config.reward_plan_rate_limit),
+  banMinutes: config.reward_plan_ban_minutes === undefined ? 10 : Number(config.reward_plan_ban_minutes),
+});
+setInterval(() => rewardPlanLimiter.prune(Date.now()), 60 * 1000).unref();
+
+// Answers 429 with Retry-After and returns true when `limiter` blocks the
+// origin IP: over the limit, the IP is blocked for a while and every call of
+// the limited methods answers 429 until it lapses.
+function rejectRateLimited(limiter, req, res, label, unit) {
+  const verdict = limiter.check(req.ip, Date.now());
+  if (verdict.allowed) return false;
+  if (verdict.justBanned) {
+    console.log(label, 'rate limit exceeded, banning', req.ip, 'for', limiter.stats().banMinutes, 'minutes');
+  }
+  res.set('Retry-After', String(verdict.retryAfterSeconds));
+  res.status(429).send({
+    error: 'Too many requests',
+    description:
+      label +
+      ' requests from this address are blocked for ' +
+      verdict.retryAfterSeconds +
+      ' seconds (limit: ' +
+      limiter.stats().perMinute +
+      ' ' +
+      unit +
+      ' requests per minute)',
+  });
+  return true;
+}
+
 //Default to concurrency 1
 const queue = new PQueue({ concurrency: config.concurrency || 1 });
 
@@ -110,6 +145,7 @@ app.get('/getCache', (_, res) => {
   obj.methods = cacheService.getMethods();
   obj.nodes = getNodes();
   obj.depinRateLimit = depinLimiter.stats();
+  obj.rewardPlanRateLimit = rewardPlanLimiter.stats();
   return res.send(obj);
 });
 app.get('/settings', (req, res) => {
@@ -248,25 +284,12 @@ app.post('/rpc', async (req, res) => {
       });
     }
 
-    // DePIN abuse control by origin IP: over the limit, the IP is blocked for
-    // a while and every depin* call answers 429 until it lapses.
+    // Abuse control by origin IP.
     if (typeof method === 'string' && method.startsWith('depin')) {
-      const verdict = depinLimiter.check(req.ip, Date.now());
-      if (!verdict.allowed) {
-        if (verdict.justBanned) {
-          console.log('DePIN rate limit exceeded, banning', req.ip, 'for', depinLimiter.stats().banMinutes, 'minutes');
-        }
-        res.set('Retry-After', String(verdict.retryAfterSeconds));
-        return res.status(429).send({
-          error: 'Too many requests',
-          description:
-            'DePIN requests from this address are blocked for ' +
-            verdict.retryAfterSeconds +
-            ' seconds (limit: ' +
-            depinLimiter.stats().perMinute +
-            ' depin* requests per minute)',
-        });
-      }
+      if (rejectRateLimited(depinLimiter, req, res, 'DePIN', 'depin*')) return;
+    }
+    if (REWARD_PLAN_METHODS.has(method)) {
+      if (rejectRateLimited(rewardPlanLimiter, req, res, 'Reward plan', 'reward plan')) return;
     }
     //Special case for listaddressesforassets
     //Seems to be a bug with listaddressesforassets with second param totalCount set to true

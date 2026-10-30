@@ -76,6 +76,10 @@ function shouldCache(method) {
     //"getmempoolinfo",
     //"getrawmempool",
     "getpubkey",
+    "getsilentpaymentindexinfo",
+    "getsilentpaymenttweaks",
+    // getsilentpaymenttweaksrange: up to 4 MiB per answer and a key per range,
+    // too much memory to hold until the next block
     "getspentinfo",
     "gettxout",
     "gettxoutproof",
@@ -99,6 +103,7 @@ function shouldCache(method) {
     //  "setgenerate",
     //  "== Messages ==",
     //  "clearmessages",
+    //  "getchannelmessages", // pages up to 10000 messages, many option sets
     //  "sendmessage",
     //  "subscribetochannel",
     //  "unsubscribefromchannel",
@@ -161,7 +166,11 @@ function shouldCache(method) {
     //  "== Rewards ==",
     //  "cancelsnapshotrequest",
     //  "distributereward",
+    // The node keeps few plans per tip; a repeated plan read is answered here.
+    "getdistributionplan",
+    "getdistributionproof",
     //  "getdistributestatus",
+    "getsnapshotannouncement",
     //  "getsnapshotrequest",
     //  "listsnapshotrequests",
     //  "requestsnapshot",

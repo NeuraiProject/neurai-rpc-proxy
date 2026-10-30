@@ -222,6 +222,8 @@ Configure your setup in ./config.json
   (`depin_enabled` / `depin_url` from 1.1.x are obsolete and ignored — DePIN goes through `neurai_url`)
 - `depin_rate_limit` - `depin*` requests allowed per origin IP and minute (default 60, 0 disables)
 - `depin_ban_minutes` - How long an IP that exceeded the limit is blocked (default 60)
+- `reward_plan_rate_limit` - `getdistributionplan` / `getdistributionproof` requests allowed per origin IP and minute (default 20, 0 disables). A plan the node has not cached is computed under `cs_main` over every holder of the snapshot
+- `reward_plan_ban_minutes` - How long an IP that exceeded the reward plan limit is blocked (default 10)
 - `trust_proxy` - Express `trust proxy` setting; enable only behind a trusted reverse proxy that sets `X-Forwarded-For`
 
 ### How should my Neurai node be configured?
@@ -256,6 +258,21 @@ rpcallowip=127.0.0.1
 dbcache=4096
 ```
 
+Some whitelisted reads need an index of a Neurai 2.0 node; without it the node
+answers with an error:
+
+```
+# NIP-047 light clients: getsilentpaymenttweaks, getsilentpaymenttweaksrange, getsilentpaymentindexinfo
+silentpaymentindex=1
+
+# getchannelmessages (refused with prune)
+channelmessageindex=1
+```
+
+The NIP-048 reads (`getdistributionplan`, `getdistributionproof`,
+`getsnapshotannouncement`) use `assetindex=1`. With the Docker node image, set
+`NEURAI_SILENTPAYMENTINDEX=1` and `NEURAI_CHANNELMESSAGEINDEX=1`.
+
 For an RPC 5 testnet node, set `depinmsg=1` and `depinmsgtoken`, keep the
 wallet enabled, and optionally tune `depinratelimit` (the compose file does this
 through environment variables). There is no DePIN port: the service is served on the RPC port
@@ -273,8 +290,10 @@ Go to https://xna-main.neurai.org/ for in depth description of each RPC call
 
 
 ## List of Neurai RPC calls
-This is a raw list, a lot of these calls are not whitelisted.
-For example we do NOT let developers call procedure `dumpprivkey`
+This is a raw list, a lot of these calls are not whitelisted (`GET /whitelist` returns the ones that are).
+For example we do NOT let developers call procedure `dumpprivkey`.
+It is the `help` output of a Neurai 2.0 node (commit `c665ba3`) with an encrypted wallet, plus the public
+DePIN messaging methods, which `help` does not print.
 ```
 == Addressindex ==
 getaddressbalance
@@ -296,8 +315,8 @@ listmyassets "( asset )" ( verbose ) ( count ) ( start ) (confs)
 purgesnapshot "asset_name" block_height
 reissue "asset_name" qty "to_address" "change_address" ( reissuable ) ( new_units) "( new_ipfs )" 
 transfer "asset_name" qty "to_address" "message" expire_time "change_address" "asset_change_address"
-transferfromaddress "asset_name" "from_address" qty "to_address" "message" expire_time "rvn_change_address" "asset_change_address"
-transferfromaddresses "asset_name" ["from_addresses"] qty "to_address" "message" expire_time "rvn_change_address" "asset_change_address"
+transferfromaddress "asset_name" "from_address" qty "to_address" "message" expire_time "xna_change_address" "asset_change_address"
+transferfromaddresses "asset_name" ["from_addresses"] qty "to_address" "message" expire_time "xna_change_address" "asset_change_address"
 
 == Blockchain ==
 clearmempool
@@ -306,7 +325,7 @@ getbestblockhash
 getblock "blockhash" ( verbosity ) 
 getblockchaininfo
 getblockcount
-getblockdeltas "blockhash"
+
 getblockhash height
 getblockhashes timestamp
 getblockheader "hash" ( verbose )
@@ -318,7 +337,13 @@ getmempoolancestors txid (verbose)
 getmempooldescendants txid (verbose)
 getmempoolentry txid
 getmempoolinfo
+getprivacypoolinfo pool ( limit )
+getprivacypoolupdates pool ( cursor limit )
+getpubkey "address"
 getrawmempool ( verbose )
+getsilentpaymentindexinfo
+getsilentpaymenttweaks "blockhash" ( "encoding" )
+getsilentpaymenttweaksrange start_height count ( "anchor_hash" "encoding" )
 getspentinfo
 gettxout "txid" n ( include_mempool )
 gettxoutproof ["txid",...] ( blockhash )
@@ -337,6 +362,34 @@ help ( "command" )
 stop
 uptime
 
+== Depin asset ==
+checkdepinvalidity "asset_name" "address"
+closedepin "asset_name" ("change_address")
+freezedepin "asset_name" "address" ("change_address")
+listdepinholders "asset_name"
+opendepin "asset_name" ("change_address")
+sealdepin "asset_name" ("change_address")
+selfrevokedepin "asset_name"
+unfreezedepin "asset_name" "address" ("change_address")
+
+== Depin messaging ==
+depinchallenge request
+depinclearmsg request
+depindecrypt "address" "encrypted"
+depingetancestorrecipients request
+depingetmsg "token" ( "fromaddress" )
+depingetmsginfo request
+depinlistsections request
+depinmcpstatus request
+depinpoolpkey
+depinpoolstats request
+depinreceivemsg request
+depinreceiveseq request
+depinsendmsg "token" "message" "fromaddress"
+depinsignrpc method request  # LOCAL WALLET ONLY
+depinsubmitmsg request
+listdepinaddresses "asset_name" (count) (start)
+
 == Generating ==
 generate nblocks ( maxtries )
 generatetoaddress nblocks address (maxtries)
@@ -345,6 +398,7 @@ setgenerate generate ( genproclimit )
 
 == Messages ==
 clearmessages 
+getchannelmessages "channel" ( {options} )
 sendmessage "channel_name" "ipfs_hash" (expire_time)
 subscribetochannel 
 unsubscribefromchannel 
@@ -412,11 +466,19 @@ viewmytaggedaddresses
 
 == Rewards ==
 cancelsnapshotrequest "asset_name" block_height
-distributereward "asset_name" snapshot_height "distribution_asset_name" gross_distribution_amount ( "exception_addresses" ) ("change_address") ("dry_run")
+createdistributionbatch "plan_hash" {plan} batch_index ( {options} )
+distributereward "asset_name" snapshot_height "distribution_asset_name" gross_distribution_amount ( "exception_addresses" ) ( "change_address" )
 getdistributestatus "asset_name" snapshot_height "distribution_asset_name" gross_distribution_amount ( "exception_addresses" )
+getdistributionbatches {plan} ( {options} )
+getdistributionplan "asset_name" snapshot_height "distribution_asset_name" gross_distribution_amount ( "exception_addresses" {options} )
+getdistributionproof {plan} "address"
+getsnapshotannouncement "asset_name" snapshot_height
+getsnapshotrecipients "asset_name" snapshot_height
 getsnapshotrequest "asset_name" block_height
 listsnapshotrequests ["asset_name" [block_height]]
+replaysnapshot "asset_name" snapshot_height ( "expected_snapshot_hash" )
 requestsnapshot "asset_name" block_height
+verifydistribution {plan} [batches] ( {options} )
 
 == Util ==
 createmultisig nrequired ["key",...]
@@ -426,45 +488,17 @@ signmessagewithprivkey "privkey" "message"
 validateaddress "address"
 verifymessage "address" "signature" "message"
 
-== Depin asset ==
-checkdepinvalidity
-closedepin "asset_name" ( "change_address" )
-depingetancestorrecipients
-freezedepin
-getpubkey
-listdepinaddresses
-listdepinholders
-opendepin "asset_name" ( "change_address" )
-sealdepin "asset_name" ( "change_address" )
-selfrevokedepin
-unfreezedepin
-
-== DePIN messaging (RPC 5; node catalog, not the public whitelist) ==
-depinchallenge
-depinclearmsg
-depingetmsg
-depingetmsginfo
-depinlistsections
-depinmcpstatus
-depinpoolpkey
-depinpoolstats
-depinreceivemsg
-depinreceiveseq
-depinsendmsg
-depinsignrpc  # LOCAL WALLET ONLY
-depindecrypt
-depinsubmitmsg
-
 == Wallet ==
 abandontransaction "txid"
 abortrescan
 addmultisigaddress nrequired ["key",...] ( "account" )
 addwitnessaddress "address"
 backupwallet "destination"
+decodesilentpaymentcode "code"
 dumpextkeypq
 dumpprivkey "address"
 dumpwallet "filename"
-encryptwallet "passphrase"
+exportsilentpaymentviewkey "acknowledge"
 exportxpqpub count ( chain offset )
 getaccount "address"
 getaccountaddress "account"
@@ -476,6 +510,8 @@ getnewaddress ( "account" "address_type" )
 getrawchangeaddress ( "address_type" )
 getreceivedbyaccount "account" ( minconf )
 getreceivedbyaddress "address" ( minconf )
+getsilentpaymentcode
+getsilentpaymentinfo
 gettransaction "txid" ( include_watchonly )
 getunconfirmedbalance
 getwalletinfo
@@ -484,6 +520,7 @@ importmulti "requests" ( "options" )
 importprivkey "privkey" ( "label" ) ( rescan )
 importprunedfunds
 importpubkey "pubkey" ( "label" rescan )
+importsilentpaymentviewkey "scan_private_key" "spend_pubkey" ( start_height )
 importwallet "filename"
 keypoolrefill ( newsize )
 listaccounts ( minconf include_watchonly)
@@ -492,6 +529,7 @@ listlockunspent
 listpqaddresses
 listreceivedbyaccount ( minconf include_empty include_watchonly)
 listreceivedbyaddress ( minconf include_empty include_watchonly)
+listsilentpayments ( include_spent )
 listsinceblock ( "blockhash" target_confirmations include_watchonly include_removed )
 listtransactions ( "account" count skip include_watchonly)
 listunspent ( minconf maxconf  ["addresses",...] [include_unsafe] [query_options])
@@ -499,10 +537,13 @@ listwallets
 lockunspent unlock ([{"txid":"txid","vout":n},...])
 move "fromaccount" "toaccount" amount ( minconf "comment" )
 removeprunedfunds "txid"
+repairsilentpaymentidentity
 rescanblockchain ("start_height") ("stop_height")
+rescansilentpayments ( start_height )
 sendfrom "fromaccount" "toaddress" amount ( minconf "comment" "comment_to" )
 sendfromaddress "from_address" "to_address" amount ( "comment" "comment_to" subtractfeefromamount conf_target "estimate_mode")
 sendmany "fromaccount" {"address":amount,...} ( minconf "comment" ["address",...] conf_target "estimate_mode")
+sendsilentpayments [{"code":"str","amount":x},...] ( conf_target "estimate_mode" )
 sendtoaddress "address" amount ( "comment" "comment_to" subtractfeefromamount conf_target "estimate_mode")
 setaccount "address" "account"
 settxfee amount
@@ -510,7 +551,6 @@ signmessage "address" "message"
 walletlock
 walletpassphrase "passphrase" timeout
 walletpassphrasechange "oldpassphrase" "newpassphrase"
-
 ```
 
 ## Exact numeric transport (1.2.1)

@@ -42,6 +42,11 @@ const whitelist = [
   'getmempoolentry',
   'getmempoolinfo',
   'getrawmempool',
+  // NIP-047 light-client index (the node needs -silentpaymentindex). Ranges
+  // are bounded by the node: 1000 blocks and 4 MiB.
+  'getsilentpaymentindexinfo',
+  'getsilentpaymenttweaks',
+  'getsilentpaymenttweaksrange',
   'getspentinfo',
   // Privacy-pool state threads (the node needs -spentindex -txindex). Pages are
   // bounded by the node: 1000 transitions and 1 MiB of raw transactions.
@@ -72,6 +77,9 @@ const whitelist = [
 
   //== Messages ==
   //"clearmessages",
+  // Chain-wide channel message index (the node needs -channelmessageindex).
+  // Pages are bounded by the node: at most 10000 messages, a block never split.
+  'getchannelmessages',
   //"sendmessage",
   //"subscribetochannel",
   //"unsubscribefromchannel",
@@ -140,13 +148,24 @@ const whitelist = [
     */
 
   //== Rewards ==
+  // NIP-048 reads a holder needs (the node needs -assetindex). The two plan
+  // reads compute the plan under cs_main when the node has not cached it, so
+  // index.js limits them per origin IP (reward_plan_rate_limit).
+  'getdistributionplan',
+  'getdistributionproof',
+  'getsnapshotannouncement',
   /*
     "cancelsnapshotrequest",
+    "createdistributionbatch", // wallet: builds and signs a payment batch
     "distributereward",
+    "getdistributionbatches", // payer side; the answer grows with the holders
     "getdistributestatus",
+    "getsnapshotrecipients", // every holder with its public key, unpaged (-pubkeyindex)
     "getsnapshotrequest",
     "listsnapshotrequests",
+    "replaysnapshot", // reads every block since asset activation under cs_main
     "requestsnapshot",
+    "verifydistribution", // payer side; takes arbitrary records and locks the mempool
 
     */
 

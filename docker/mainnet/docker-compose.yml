@@ -107,6 +107,9 @@ services:
       # when a trusted reverse proxy in front sets X-Forwarded-For.
       PROXY_DEPIN_RATE_LIMIT: "60"
       PROXY_DEPIN_BAN_MINUTES: "60"
+      # The same for the NIP-048 plan reads (getdistributionplan/proof).
+      PROXY_REWARD_PLAN_RATE_LIMIT: "20"
+      PROXY_REWARD_PLAN_BAN_MINUTES: "10"
       PROXY_TRUST_PROXY: "false"
 
     ports:

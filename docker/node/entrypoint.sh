@@ -32,6 +32,16 @@ pubkeyindex=${NEURAI_PUBKEYINDEX:-1}
 
 EOF
 
+# Indexes behind the NIP-047 silent-payment reads and getchannelmessages that
+# the proxy whitelists. Only Neurai 2.0 nodes know these options, so they are
+# written only when enabled.
+if [ "${NEURAI_SILENTPAYMENTINDEX:-0}" = "1" ]; then
+  echo "silentpaymentindex=1" >> "$DATA_DIR/neurai.conf"
+fi
+if [ "${NEURAI_CHANNELMESSAGEINDEX:-0}" = "1" ]; then
+  echo "channelmessageindex=1" >> "$DATA_DIR/neurai.conf"
+fi
+
 if [ "${NEURAI_ZMQ_ENABLED:-0}" = "1" ]; then
   ZMQ_BIND="${NEURAI_ZMQ_BIND:-tcp://0.0.0.0:28332}"
   cat >> "$DATA_DIR/neurai.conf" <<EOF

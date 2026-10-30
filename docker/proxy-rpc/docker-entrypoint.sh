@@ -37,6 +37,8 @@ else
   "concurrency": ${PROXY_CONCURRENCY:-4},
   "depin_rate_limit": ${PROXY_DEPIN_RATE_LIMIT:-60},
   "depin_ban_minutes": ${PROXY_DEPIN_BAN_MINUTES:-60},
+  "reward_plan_rate_limit": ${PROXY_REWARD_PLAN_RATE_LIMIT:-20},
+  "reward_plan_ban_minutes": ${PROXY_REWARD_PLAN_BAN_MINUTES:-10},
   "trust_proxy": ${PROXY_TRUST_PROXY:-false},
   "endpoint": "${PROXY_ENDPOINT:-}",
   "environment": "${PROXY_ENVIRONMENT:-Neurai}",

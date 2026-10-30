@@ -62,6 +62,7 @@ beforeAll(async () => {
     expected_genesis: '0000008b384aeffecdab182575dc4e86c9f07f90318c65088532660ed9a8a021',
     heading: 'integration test',
     local_port: 0,
+    reward_plan_rate_limit: 3,
     nodes: [
       {
         name: 'fake-node',
@@ -313,5 +314,26 @@ describe('exact RPC amounts', () => {
     });
     expect(response.status).toBe(400);
     expect(fakeNodeRequests.length).toBe(before);
+  });
+});
+
+describe('NIP-048 plan reads', () => {
+  test('share a per-IP limit; other methods are not affected', async () => {
+    const before = fakeNodeRequests.length;
+    const plan = { asset_name: 'GOLD', snapshot_height: 100, distribution_asset_name: 'XNA', amount: 10 };
+    for (const address of ['tA', 'tB']) {
+      expect((await post('/rpc', { method: 'getdistributionproof', params: [plan, address] })).status).toBe(200);
+    }
+    expect((await post('/rpc', { method: 'getdistributionplan', params: ['GOLD', 100, 'XNA', 10] })).status).toBe(200);
+
+    const blocked = await post('/rpc', { method: 'getdistributionproof', params: [plan, 'tC'] });
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get('retry-after')).toBe(String(10 * 60));
+    expect((await blocked.json()).description).toMatch(/^Reward plan requests .* 3 reward plan requests per minute\)$/);
+    expect((await post('/rpc', { method: 'getdistributionplan', params: ['GOLD', 101, 'XNA', 10] })).status).toBe(429);
+    expect(fakeNodeRequests.slice(before).filter((r) => r.method.startsWith('getdistribution')).length).toBe(3);
+
+    expect((await post('/rpc', { method: 'getsnapshotannouncement', params: ['GOLD', 100] })).status).toBe(200);
+    expect((await post('/rpc', { method: 'getchannelmessages', params: ['GOLD!'] })).status).toBe(200);
   });
 });

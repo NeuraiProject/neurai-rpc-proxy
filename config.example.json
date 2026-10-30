@@ -2,6 +2,8 @@
   "concurrency": 4,
   "depin_rate_limit": 60,
   "depin_ban_minutes": 60,
+  "reward_plan_rate_limit": 20,
+  "reward_plan_ban_minutes": 10,
   "trust_proxy": false,
   "endpoint": "https://rpc-main.neurai.org/rpc",
   "environment": "Neurai Mainnet",

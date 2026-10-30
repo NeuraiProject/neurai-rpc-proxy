@@ -1,15 +1,16 @@
 /*
-Per-IP rate limiting and temporary bans for the depin* methods.
+Per-IP rate limiting and temporary bans for the depin* methods, and with a
+separate limiter for the NIP-048 reward-plan reads.
 
 The node cannot do this itself: behind the proxy every caller shares the
 proxy's IP, so the node only limits per authenticated address. The proxy is
 the one place where the real origin exists, so this is where a flood of
 depinchallenge / depinreceivemsg / depinsubmitmsg from one source is cut off.
 
-Semantics (sliding window):
-  - at most `perMinute` depin* requests per IP in any 60 s window;
-  - exceeding it bans the IP for `banMinutes` (every depin* request answers
-    429 with Retry-After until the ban lapses);
+Semantics (sliding window), per limiter:
+  - at most `perMinute` requests of its methods per IP in any 60 s window;
+  - exceeding it bans the IP for `banMinutes` (every request of those methods
+    answers 429 with Retry-After until the ban lapses);
   - perMinute <= 0 disables the limiter entirely.
 
 State is in memory and bounded: `maxKeys` tracked IPs, pruned when exceeded.
@@ -65,4 +66,4 @@ function createDepinLimiter({ perMinute = 60, banMinutes = 60, windowMs = 60 * 1
   return { check, prune, stats };
 }
 
-module.exports = { createDepinLimiter };
+module.exports = { createDepinLimiter, createRateLimiter: createDepinLimiter };

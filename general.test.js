@@ -19,3 +19,28 @@ test("getblockcount IS whitelisted", () => {
 test.each(["getprivacypoolinfo", "getprivacypoolupdates"])("%s IS whitelisted (privacy-pool history)", (method) => {
     expect(isWhitelisted(method)).toBe(true);
 });
+
+test.each([
+  "getsilentpaymentindexinfo",
+  "getsilentpaymenttweaks",
+  "getsilentpaymenttweaksrange",
+  "getchannelmessages",
+  "getdistributionplan",
+  "getdistributionproof",
+  "getsnapshotannouncement",
+])("%s IS whitelisted (bounded chain read)", (method) => {
+  expect(isWhitelisted(method)).toBe(true);
+});
+
+test.each([
+  "createdistributionbatch",
+  "getdistributionbatches",
+  "verifydistribution",
+  "replaysnapshot",
+  "getsnapshotrecipients",
+  "opendepin",
+  "closedepin",
+  "sealdepin",
+])("%s not whitelisted (payer side, wallet or unbounded)", (method) => {
+  expect(isWhitelisted(method)).toBe(false);
+});
