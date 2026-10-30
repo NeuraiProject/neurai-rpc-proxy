@@ -461,7 +461,6 @@ abortrescan
 addmultisigaddress nrequired ["key",...] ( "account" )
 addwitnessaddress "address"
 backupwallet "destination"
-bumpfee has been deprecated on the XNA Wallet.
 dumpextkeypq
 dumpprivkey "address"
 dumpwallet "filename"
@@ -502,9 +501,9 @@ move "fromaccount" "toaccount" amount ( minconf "comment" )
 removeprunedfunds "txid"
 rescanblockchain ("start_height") ("stop_height")
 sendfrom "fromaccount" "toaddress" amount ( minconf "comment" "comment_to" )
-sendfromaddress "from_address" "to_address" amount ( "comment" "comment_to" subtractfeefromamount replaceable conf_target "estimate_mode")
-sendmany "fromaccount" {"address":amount,...} ( minconf "comment" ["address",...] replaceable conf_target "estimate_mode")
-sendtoaddress "address" amount ( "comment" "comment_to" subtractfeefromamount replaceable conf_target "estimate_mode")
+sendfromaddress "from_address" "to_address" amount ( "comment" "comment_to" subtractfeefromamount conf_target "estimate_mode")
+sendmany "fromaccount" {"address":amount,...} ( minconf "comment" ["address",...] conf_target "estimate_mode")
+sendtoaddress "address" amount ( "comment" "comment_to" subtractfeefromamount conf_target "estimate_mode")
 setaccount "address" "account"
 settxfee amount
 signmessage "address" "message"

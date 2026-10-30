@@ -202,7 +202,6 @@ function shouldCache(method) {
     //  "addmultisigaddress",
     //  "addwitnessaddress",
     //  "backupwallet",
-    //  "bumpfee",
     //  "dumpprivkey",
     //  "dumpwallet",
     //  "encryptwallet",

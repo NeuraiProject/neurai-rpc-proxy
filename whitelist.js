@@ -212,7 +212,6 @@ const whitelist = [
     "addmultisigaddress",
     "addwitnessaddress",
     "backupwallet",
-    "bumpfee",
     "dumpextkeypq",
     "dumpprivkey",
     "dumpwallet",
