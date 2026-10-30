@@ -1,6 +1,6 @@
 {
   "name": "neurai-rpc-proxy",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Neurai Web API via safe proxy",
   "main": "index.js",
   "dependencies": {
