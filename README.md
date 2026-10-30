@@ -37,7 +37,7 @@ Abuse control remains per origin IP (`depin_rate_limit`, default 60/minute; `dep
 
 Signed request parameters use lossless JSON, preserving cursor integers beyond 2^53 and lexical numeric tokens. Duplicate keys and numeric-object impersonation are rejected. The proxy does not manufacture pool signatures or independently prove that a directory contains only asset holders. Applications can compare against an independent chain source before sending.
 
-See the sibling [RPC 5 integration guide](../neurai-rpc/DEPIN_IMPLEMENTATION_GUIDE_EN.md). The proxy installs the published `@neuraiproject/neurai-rpc@0.8.0` from npm, with integrity pinned in `package-lock.json`.
+See the sibling [RPC 5 integration guide](../neurai-rpc/DEPIN_IMPLEMENTATION_GUIDE_EN.md). The proxy installs the published `@neuraiproject/neurai-rpc@0.9.0` from npm, with integrity pinned in `package-lock.json`.
 
 ## How do I use this software?
 
@@ -144,18 +144,23 @@ docker compose up -d
 template that changes when a new variable appears. Every variable has the same
 default in the compose file, so a stack also starts without a `.env`.
 
-- **mainnet** pulls `neuraiproject/neurai-node:v1.0.6` from Docker Hub. The image
+- **mainnet** pulls `neuraiproject/neurai-node:v1.0.7` from Docker Hub. The image
   writes `/data/neurai.conf` from its `NEURAI_*` variables **on the first start only**
   and keeps it in the volume, so changing a value in `.env` later does not reach a
   node that already has its file. To apply one, delete the file and restart; the
   entrypoint regenerates it: `docker compose exec neuraid rm /data/neurai.conf &&
   docker compose restart neuraid`. The proxy, by contrast, re-reads `.env` on every
   `up -d`, so keep both in step. The node runs as the unprivileged user `neurai`
-  (uid 999); the RPC and ZMQ ports stay inside the compose network.
+  (uid 999); the RPC and ZMQ ports stay inside the compose network. v1.0.7 is a
+  drop-in upgrade from v1.0.6: same `/data`, entrypoint, variables and ports, and
+  the existing `neurai.conf` and chain data are reused. A `.env` copied from an
+  older template still says `NODE_IMAGE_TAG=v1.0.6`; change it there too.
 - **testnet** builds the `DePIN-Test` branch with `docker/node/Dockerfile` and the
   env-driven `entrypoint.sh` next to it; see the DePIN section above. Set
   `NODE_SOURCE_COMMIT` to the audited node commit and rebuild the image when
-  the node source changes. The current default is `0fe5a74943210508ec3be34c78e0f9192b7fefec`.
+  the node source changes. The current default is `c665ba3106a9fa76436a3dadca002619eda5d3ea`,
+  which adds the no-RBF sequence rule (testnet from block 10) and NIP-054 P2AH
+  `OP_CHECKASSETAUTH` (from block 100) that the running testnet enforces.
 
 **Reset testnet deployment:** use a fresh node data volume. The previous
 testnet data directory has a different genesis and cannot be reused by
@@ -175,7 +180,7 @@ activates C6 at block 100; deploy a node revision that includes this schedule.
 Mining control and network-management RPC methods remain outside the public whitelist.
 
 **Upgrading a mainnet node from the v1.0.5 image:** its data directory was
-`/data/node`; v1.0.6 uses `/data` and the volume keeps the old layout, so without a
+`/data/node`; v1.0.6 and later use `/data` and the volume keeps the old layout, so without a
 move the new node would resync from scratch. Once, with the stack stopped:
 
 ```
@@ -271,12 +276,15 @@ channelmessageindex=1
 
 The NIP-048 reads (`getdistributionplan`, `getdistributionproof`,
 `getsnapshotannouncement`) use `assetindex=1`. With the Docker node image, set
-`NEURAI_SILENTPAYMENTINDEX=1` and `NEURAI_CHANNELMESSAGEINDEX=1`.
+`NEURAI_SILENTPAYMENTINDEX=1` and `NEURAI_CHANNELMESSAGEINDEX=1`; the testnet
+compose file does. On an unpruned node both indexes are built at startup, so
+turning them on needs a restart, not `-reindex`. The `v1.0.7` mainnet image
+does not know these options.
 
 For an RPC 5 testnet node, set `depinmsg=1` and `depinmsgtoken`, keep the
 wallet enabled, and optionally tune `depinratelimit` (the compose file does this
 through environment variables). There is no DePIN port: the service is served on the RPC port
-the proxy already talks to. The stable `v1.0.6` mainnet node does not accept these
+the proxy already talks to. The stable `v1.0.7` mainnet node does not accept these
 options.
 
 ## Sir, how do I start this application?
@@ -572,4 +580,4 @@ library alone cannot recover digits already rounded by an older proxy.
 
 ## Published RPC 5 dependency
 
-This checkout uses the published `@neuraiproject/neurai-rpc@0.8.0`. Run `npm ci` before starting or testing; `package-lock.json` pins the registry tarball and its SHA-512 integrity. Docker installs the same dependency from the lockfile. No local package archives are required.
+This checkout uses the published `@neuraiproject/neurai-rpc@0.9.0`. Run `npm ci` before starting or testing; `package-lock.json` pins the registry tarball and its SHA-512 integrity. Docker installs the same dependency from the lockfile. No local package archives are required.

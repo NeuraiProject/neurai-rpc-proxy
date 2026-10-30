@@ -2,10 +2,10 @@
 FROM debian:12 AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
-# Git ref to build: a release tag (upstream tags carry no "v": 1.0.6) or a
+# Git ref to build: a release tag (upstream tags carry no "v": 1.0.7) or a
 # branch. The testnet compose overrides it with DePIN-Test; mainnet does not
 # build at all, it pulls neuraiproject/neurai-node from Docker Hub.
-ARG BRANCH=1.0.6
+ARG BRANCH=1.0.7
 ARG SOURCE_COMMIT=
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -54,7 +54,13 @@ RUN git clone --branch ${BRANCH} --single-branch \
 
 WORKDIR /root/Neurai/depends
 
-RUN make HOST=x86_64-pc-linux-gnu NO_QT=1 -j$(nproc)
+# Mirror tried only when a package's upstream URL fails (samba.org, the ccache
+# source, goes unreachable); depends checks every file against its sha256
+# from either location.
+ARG DEPENDS_FALLBACK=https://bitcoincore.org/depends-sources
+
+RUN make HOST=x86_64-pc-linux-gnu NO_QT=1 \
+      FALLBACK_DOWNLOAD_PATH=${DEPENDS_FALLBACK} -j$(nproc)
 
 WORKDIR /root/Neurai
 

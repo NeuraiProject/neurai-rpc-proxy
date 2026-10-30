@@ -8,7 +8,7 @@ services:
     # not change a node that already has its file (see README, "Docker").
     # The data directory is /data (v1.0.5 used /data/node — migration in the
     # README). neuraid runs as the unprivileged user neurai (uid 999).
-    image: neuraiproject/neurai-node:${NODE_IMAGE_TAG:-v1.0.6}
+    image: neuraiproject/neurai-node:${NODE_IMAGE_TAG:-v1.0.7}
     restart: unless-stopped
 
     logging:

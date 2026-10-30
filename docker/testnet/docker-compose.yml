@@ -8,7 +8,7 @@ services:
       args:
         # Testnet deliberately uses the branch that implements DePIN messaging.
         BRANCH: DePIN-Test
-        SOURCE_COMMIT: "${NODE_SOURCE_COMMIT:-0fe5a74943210508ec3be34c78e0f9192b7fefec}"
+        SOURCE_COMMIT: "${NODE_SOURCE_COMMIT:-c665ba3106a9fa76436a3dadca002619eda5d3ea}"
     restart: unless-stopped
 
     logging:
@@ -46,6 +46,11 @@ services:
       NEURAI_TIMESTAMPINDEX: "1"
       NEURAI_SPENTINDEX: "1"
       NEURAI_PUBKEYINDEX: "1"
+      # NIP-047 silent payments (getsilentpaymenttweaks*, getsilentpaymentindexinfo)
+      # and NIP-048 channel messages (getchannelmessages). On an unpruned node
+      # both are built at startup from the stored blocks, without -reindex.
+      NEURAI_SILENTPAYMENTINDEX: "1"
+      NEURAI_CHANNELMESSAGEINDEX: "1"
 
       NEURAI_ZMQ_ENABLED: "1"
       NEURAI_ZMQ_BIND: "tcp://0.0.0.0:28332"
