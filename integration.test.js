@@ -48,7 +48,7 @@ beforeAll(async () => {
   nodeResponses = {
     // Every /rpc call is preceded by a getbestblockhash to drive cache invalidation
     getbestblockhash: { status: 200, body: { result: 'aaaa', error: null } },
-    getblockhash: { status: 200, body: { result: '0000008b384aeffecdab182575dc4e86c9f07f90318c65088532660ed9a8a021', error: null } },
+    getblockhash: { status: 200, body: { result: '000000c710413a4265a996d30c86043aedef6a563900f1bc43fea61d5b2dc77d', error: null } },
   };
 
   const nodePort = await startFakeNode();
@@ -59,7 +59,7 @@ beforeAll(async () => {
     concurrency: 4,
     endpoint: 'http://rpc-proxy:19999/rpc',
     environment: 'integration test',
-    expected_genesis: '0000008b384aeffecdab182575dc4e86c9f07f90318c65088532660ed9a8a021',
+    expected_genesis: '000000c710413a4265a996d30c86043aedef6a563900f1bc43fea61d5b2dc77d',
     heading: 'integration test',
     local_port: 0,
     reward_plan_rate_limit: 3,
@@ -202,7 +202,7 @@ describe('POST /rpc error handling', () => {
   test('a whitelisted RPC 5 method reaches its exact pool without changing params', async () => {
     const identity = {
       protocol: 5,
-      network: '0000008b384aeffecdab182575dc4e86c9f07f90318c65088532660ed9a8a021',
+      network: '000000c710413a4265a996d30c86043aedef6a563900f1bc43fea61d5b2dc77d',
       pool_pubkey: '02' + '11'.repeat(32),
       pool_root: '&TOKEN',
       instance_id: '22'.repeat(32),

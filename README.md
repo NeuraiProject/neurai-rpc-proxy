@@ -158,9 +158,11 @@ default in the compose file, so a stack also starts without a `.env`.
 - **testnet** builds the `DePIN-Test` branch with `docker/node/Dockerfile` and the
   env-driven `entrypoint.sh` next to it; see the DePIN section above. Set
   `NODE_SOURCE_COMMIT` to the audited node commit and rebuild the image when
-  the node source changes. The current default is `c665ba3106a9fa76436a3dadca002619eda5d3ea`,
-  which adds the no-RBF sequence rule (testnet from block 10) and NIP-054 P2AH
-  `OP_CHECKASSETAUTH` (from block 100) that the running testnet enforces.
+  the node source changes. The current default is `7f1773e538c210212441bd723eb8ea3ba99a00ef`,
+  the testnet reset of 2026-11-05: new genesis, protocol 70031 required from the
+  first handshake, every rule (no-RBF, NIP-054 `OP_CHECKASSETAUTH`, the C6 proof
+  profile) from block 10, and v3 reference inputs announced by serialization
+  flag `0x02`. Nodes of the previous testnet cannot connect to it.
 
 **Reset testnet deployment:** use a fresh node data volume. The previous
 testnet data directory has a different genesis and cannot be reused by
@@ -171,7 +173,7 @@ Do not copy `depinpool.dat` into the new volume, since it contains messages
 from the previous chain. Rebuild the node image with the intended
 `NODE_SOURCE_COMMIT`, then check `getblockhash 0` and `getnetworkinfo`
 directly on the node before routing traffic. The testnet proxy expects genesis
-`0000008b384aeffecdab182575dc4e86c9f07f90318c65088532660ed9a8a021`;
+`000000c710413a4265a996d30c86043aedef6a563900f1bc43fea61d5b2dc77d`;
 it answers 503 if no configured node matches. The proxy exposes the read-only
 `getnetworkinfo` method so C6 wallets can obtain the node's `relayfee` for sponsor
 recovery; this method is not cached. C6 additionally requires the node to report
